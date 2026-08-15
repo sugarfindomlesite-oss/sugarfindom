@@ -190,6 +190,89 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }
 }
+<style>
+/* ===== CORRECTIFS MOBILE UNIQUEMENT ===== */
+@media (max-width: 899px) {
+
+  /* Landing : couvrir tout l'écran sans fuite */
+  #landing-exclusif {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    background: #000 !important;
+    z-index: 999999 !important;
+    overflow: hidden !important;
+  }
+
+  .landing-visuel {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    background-size: cover !important;
+    background-position: center !important;
+  }
+
+  .btn-accéder-site {
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    bottom: 24px !important;
+    width: min(90vw, 320px) !important;
+    padding: 16px 24px !important;
+    font-size: 18px !important;
+  }
+
+  /* Pop-up hétéro en colonne sur téléphone */
+  #popup-hetero {
+    align-items: flex-start !important;
+    overflow-y: auto !important;
+    padding: 12px !important;
+  }
+
+  #popup-hetero > div {
+    flex-direction: column !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    gap: 16px !important;
+    padding: 16px !important;
+  }
+
+  #popup-hetero > div > div:first-child {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  #popup-hetero img {
+    max-height: 220px !important;
+    width: 100% !important;
+    object-fit: contain !important;
+  }
+
+  #popup-hetero button {
+    width: 100% !important;
+    margin-top: 12px !important;
+  }
+
+  /* Pop-up rentrée */
+  #popup-rentree {
+    align-items: flex-start !important;
+    overflow-y: auto !important;
+    padding: 12px !important;
+  }
+
+  #popup-rentree > div {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 16px !important;
+  }
+}
 </style>
 </head>
 <body>
