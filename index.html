@@ -193,7 +193,108 @@
 </style>
 
 <style>
+<style>
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 @media (max-width: 899px) {
+  html, body {
+    overflow-x: hidden !important;
+  }
+
+  /* 1) Le slogan header force le zoom : on le coupe sur mobile */
+  #mainHeader > div[style*="white-space:nowrap"] {
+    display: none !important;
+  }
+
+  #mainHeader {
+    padding: 12px 14px !important;
+  }
+
+  /* 2) Accueil */
+  body.landing-open {
+    overflow: hidden !important;
+  }
+
+  body.landing-open #mainHeader,
+  body.landing-open .main-container {
+    visibility: hidden !important;
+  }
+
+  #landing-exclusif {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: #000 !important;
+    z-index: 999999 !important;
+  }
+
+  /* 3) Bouton d'accueil trop large */
+  .btn-accéder-site {
+    width: min(90vw, 300px) !important;
+    padding: 14px 18px !important;
+    font-size: 16px !important;
+    bottom: 24px !important;
+  }
+
+  /* 4) Pop-ups : rester dans l'écran SANS les casser */
+  #popup-game-container,
+  #popup-hetero,
+  #popup-rentree {
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding: 10px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  .popup-game-box,
+  #popup-hetero > div,
+  #popup-rentree > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .popup-game-body {
+    padding: 18px !important;
+  }
+
+  .pop-t1 { font-size: 18px !important; }
+  .pop-t2 { font-size: 22px !important; }
+  .pop-final-title { font-size: 26px !important; }
+  .btn-entrer-game {
+    padding: 14px !important;
+    font-size: 16px !important;
+  }
+
+  /* 5) Page principale */
+  .main-container {
+    padding: 12px !important;
+  }
+
+  .btn-main {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .filters-section select {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .profiles-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+}
+</style>
 
 </head>
 
