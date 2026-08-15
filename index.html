@@ -193,7 +193,6 @@
 </style>
 
 <style>
-<style>
 html, body {
   max-width: 100%;
   overflow-x: hidden;
@@ -304,9 +303,10 @@ html, body {
   #modalMessages .modal-content {
     width: 100% !important;
     max-width: 100% !important;
-    height: 100dvh !important;
-    max-height: 100dvh !important;
+    height: 100% !important;
+    max-height: 100% !important;
     border-radius: 0 !important;
+    padding: 0 !important;
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
@@ -318,13 +318,11 @@ html, body {
   }
 
   /* La zone de discussion prend tout */
-  #modalMessages .modal-content > div[style*="flex:1"] {
-    display: flex !important;
-    flex-direction: column !important;
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    width: 100% !important;
-    overflow: hidden !important;
+  #modalMessages {
+    padding: 0 !important;
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    inset: 0 !important;
   }
 
   #modalMessages .modal-content > div[style*="flex:1"] > div[style*="flex-direction:column"] {
