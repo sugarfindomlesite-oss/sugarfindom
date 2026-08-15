@@ -294,7 +294,7 @@ html, body {
     gap: 10px !important;
   }
 
-  /* ===== MESSAGERIE PLEIN ÉCRAN ===== */
+  /* ===== MESSAGERIE MOBILE ===== */
   #modalMessages {
     padding: 0 !important;
     align-items: stretch !important;
@@ -312,25 +312,32 @@ html, body {
     overflow: hidden !important;
   }
 
+  /* Cache la liste gauche sur mobile */
+  #chat-list {
+    display: none !important;
+  }
+
+  /* La zone de discussion prend tout */
   #modalMessages .modal-content > div[style*="flex:1"] {
     display: flex !important;
     flex-direction: column !important;
     flex: 1 1 auto !important;
     min-height: 0 !important;
+    width: 100% !important;
     overflow: hidden !important;
   }
 
-  #chat-list {
+  #modalMessages .modal-content > div[style*="flex:1"] > div[style*="flex-direction:column"] {
     width: 100% !important;
-    max-height: 90px !important;
-    min-height: 70px !important;
-    border-right: none !important;
-    border-bottom: 1px solid #333 !important;
-    overflow-y: auto !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
 
   #chat-header {
-    padding: 10px 12px !important;
+    padding: 12px !important;
+    flex-shrink: 0 !important;
   }
 
   #chat-history {
@@ -340,6 +347,7 @@ html, body {
     overflow-y: auto !important;
   }
 
+  /* Bas : contrat + saisie toujours visibles */
   #modalMessages input#messageInput {
     flex: 1 1 auto !important;
     min-width: 0 !important;
@@ -351,7 +359,8 @@ html, body {
     align-items: center !important;
     gap: 8px !important;
     padding: 10px !important;
-    padding-bottom: calc(10px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    flex-shrink: 0 !important;
   }
 
   #modalMessages button[onclick*="sendMessage"] {
