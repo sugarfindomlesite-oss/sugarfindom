@@ -190,90 +190,29 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }
 }
-<style>
-/* ===== CORRECTIFS MOBILE UNIQUEMENT ===== */
-@media (max-width: 899px) {
+</style>
 
-  /* Landing : couvrir tout l'écran sans fuite */
+<style>
+@media (max-width: 899px) {
+  body.landing-open {
+    overflow: hidden !important;
+  }
+
+  body.landing-open #mainHeader,
+  body.landing-open .main-container {
+    visibility: hidden !important;
+  }
+
   #landing-exclusif {
     position: fixed !important;
     inset: 0 !important;
     width: 100% !important;
     height: 100% !important;
-    min-height: 100vh !important;
-    min-height: 100dvh !important;
     background: #000 !important;
     z-index: 999999 !important;
-    overflow: hidden !important;
-  }
-
-  .landing-visuel {
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 100vh !important;
-    min-height: 100dvh !important;
-    background-size: cover !important;
-    background-position: center !important;
-  }
-
-  .btn-accéder-site {
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    bottom: 24px !important;
-    width: min(90vw, 320px) !important;
-    padding: 16px 24px !important;
-    font-size: 18px !important;
-  }
-
-  /* Pop-up hétéro en colonne sur téléphone */
-  #popup-hetero {
-    align-items: flex-start !important;
-    overflow-y: auto !important;
-    padding: 12px !important;
-  }
-
-  #popup-hetero > div {
-    flex-direction: column !important;
-    max-width: 100% !important;
-    width: 100% !important;
-    max-height: none !important;
-    overflow: visible !important;
-    gap: 16px !important;
-    padding: 16px !important;
-  }
-
-  #popup-hetero > div > div:first-child {
-    max-width: 100% !important;
-    width: 100% !important;
-  }
-
-  #popup-hetero img {
-    max-height: 220px !important;
-    width: 100% !important;
-    object-fit: contain !important;
-  }
-
-  #popup-hetero button {
-    width: 100% !important;
-    margin-top: 12px !important;
-  }
-
-  /* Pop-up rentrée */
-  #popup-rentree {
-    align-items: flex-start !important;
-    overflow-y: auto !important;
-    padding: 12px !important;
-  }
-
-  #popup-rentree > div {
-    max-width: 100% !important;
-    width: 100% !important;
-    max-height: none !important;
-    overflow: visible !important;
-    padding: 16px !important;
   }
 }
-</style>
+
 </head>
 <body>
 
@@ -416,22 +355,20 @@
 </div>
 
 <!-- ===================== POP-UP HÉTÉRO - VERSION DÉFINITIVE ===================== -->
-<div id="popup-hetero" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.96); z-index:1000004; align-items:center; justify-content:center; padding:15px;">
-    <div style="background:#1e1e1e; padding:25px 30px 32px 30px; border-radius:18px; max-width:950px; width:100%; max-height:88vh; display:flex; gap:32px; align-items:center; border:3px solid #2563eb; box-shadow:0 0 45px rgba(37,99,235,0.5); overflow:hidden;">
+<div <div id="popup-hetero" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.96); z-index:1000004; align-items:center; justify-content:center; padding:12px; overflow-y:auto;">
+    <div style="background:#1e1e1e; padding:20px; border-radius:18px; max-width:950px; width:100%; display:flex; flex-wrap:wrap; gap:20px; align-items:center; border:3px solid #2563eb; box-shadow:0 0 45px rgba(37,99,235,0.5);">
         
-        <!-- Photo à gauche -->
-        <div style="flex:1; max-width:430px;">
-            <img src="https://i.imgur.com/ZyjTgD7.jpeg" style="width:100%; height:auto; max-height:430px; object-fit:contain; border-radius:12px;" alt="Hétéro dominant">
+        <div style="flex:1 1 280px; max-width:100%;">
+            <img src="https://i.imgur.com/ZyjTgD7.jpeg" style="width:100%; height:auto; max-height:260px; object-fit:contain; border-radius:12px;" alt="Hétéro dominant">
         </div>
         
-        <!-- Texte à droite -->
-        <div style="flex:1; text-align:left;">
-            <h2 style="color:#2563eb; margin-bottom:18px; font-size:27px;">Bienvenue chez toi, Maître.</h2>
+        <div style="flex:1 1 280px; text-align:left; max-width:100%;">
+            <h2 style="color:#2563eb; margin-bottom:14px; font-size:24px;">Bienvenue chez toi, Maître.</h2>
             
-            <p style="font-size:16.8px; color:#e0f0ff; margin-bottom:20px;">À partir de maintenant, tout devient possible.</p>
+            <p style="font-size:16px; color:#e0f0ff; margin-bottom:16px;">À partir de maintenant, tout devient possible.</p>
             
-            <div style="background:#0f1a2b; padding:22px; border-radius:10px; margin-bottom:22px; border-left:5px solid #2563eb;">
-                <ul style="color:#b3d4ff; line-height:2.2; font-size:15.6px;">
+            <div style="background:#0f1a2b; padding:16px; border-radius:10px; margin-bottom:16px; border-left:5px solid #2563eb;">
+                <ul style="color:#b3d4ff; line-height:1.9; font-size:15px; padding-left:18px; margin:0;">
                     <li>Obtenir de l'<strong style="color:#ff3333;">ARGENT</strong> et des <strong style="color:#ff3333;">CADEAUX SANS LIMITE</strong></li>
                     <li>Financer les dépenses du foyer <strong style="color:#ff3333;">AVEC L'ARGENT DU SOUMIS</strong></li>
                     <li>Faire plaisir à <strong style="color:#ff3333;">TES ENFANTS</strong> (cadeaux, vêtements, jouets)</li>
@@ -441,15 +378,15 @@
                 </ul>
             </div>
             
-            <p style="color:#2563eb; font-weight:bold; font-size:17.5px; margin:20px 0; line-height:1.75;">
+            <p style="color:#2563eb; font-weight:bold; font-size:16px; margin:16px 0; line-height:1.6;">
                 Fais-les ramper.<br>
                 Prends tout ce que tu peux.<br>
                 Rends-les accros à ta puissance.<br><br>
-                <span style="color:#ff3333; font-size:19px;">ET SURTOUT AMUSE-TOI et RENDS-TOI RICHE!</span>
+                <span style="color:#ff3333; font-size:18px;">ET SURTOUT AMUSE-TOI et RENDS-TOI RICHE!</span>
             </p>
             
-            <button onclick="closeHeteroPopup()" 
-                    style="background:#2563eb; color:white; padding:16px 60px; font-size:17.5px; font-weight:bold; border:none; border-radius:50px; box-shadow:0 6px 20px rgba(37,99,235,0.5); width:100%;">
+            <button onclick="closeHeteroPopup()"
+                    style="background:#2563eb; color:white; padding:14px 20px; font-size:16px; font-weight:bold; border:none; border-radius:50px; box-shadow:0 6px 20px rgba(37,99,235,0.5); width:100%;">
                 J’ai compris - Allons-y
             </button>
         </div>
@@ -480,30 +417,34 @@
 <script>
     // Écouteur pour l'ouverture du pop-up
 document.addEventListener("DOMContentLoaded", function() {
+    document.body.classList.add('landing-open');
+
     // Pré-remplissage automatique (sans case à cocher)
     const savedEmail = localStorage.getItem("sugar_saved_email");
     const savedPass = localStorage.getItem("sugar_saved_pass");
-    
+   
     if (savedEmail && document.getElementById('loginEmail')) {
         document.getElementById('loginEmail').value = savedEmail;
     }
     if (savedPass && document.getElementById('loginPass')) {
         document.getElementById('loginPass').value = savedPass;
     }
-        const btn = document.getElementById('btn-acceder-exclusif');
-        if (btn) {
-            btn.onclick = function(e) {
-                e.preventDefault();
-                document.getElementById('popup-game-container').style.display = 'flex';
-            };
-        }
-    });
+
+    const btn = document.getElementById('btn-acceder-exclusif');
+    if (btn) {
+        btn.onclick = function(e) {
+            e.preventDefault();
+            document.getElementById('popup-game-container').style.display = 'flex';
+        };
+    }
+});
 
     // Efface complètement les calques supérieurs sans perturber votre page de profils
 function retirerAccueil() {
+    document.body.classList.remove('landing-open');
     document.getElementById('popup-game-container').style.display = 'none';
     document.getElementById('landing-exclusif').style.display = 'none';
-    
+
     // Ouvre automatiquement le pop-up Hétéro après le premier pop-up
     setTimeout(showHeteroPopup, 600);
 }
