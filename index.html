@@ -1412,10 +1412,10 @@ function retirerAccueil() {
 
                 <div style="border-bottom:1px solid #333; padding-bottom:12px;">
                     <strong style="color:#2563eb;">Te faire retirer tes baskets avec les dents de ton soumis</strong><br>
-                    <label style="margin-right:15px;"><input type="radio" name="p8"> À découvrir</label>
-                    <label style="margin-right:15px;"><input type="radio" name="p8"> Je pratique déjà</label>
-                    <label style="margin-right:15px;"><input type="radio" name="p8"> À voir avec la confiance et le temps</label>
-                    <label><input type="radio" name="p8"> Je ne pratiquerai pas</label>
+                    <label style="margin-right:15px;"><input type="radio" name="p8b"> À découvrir</label>
+                    <label style="margin-right:15px;"><input type="radio" name="p8b"> Je pratique déjà</label>
+                    <label style="margin-right:15px;"><input type="radio" name="p8b"> À voir avec la confiance et le temps</label>
+                    <label><input type="radio" name="p8b"> Je ne pratiquerai pas</label>
                 </div>
 
                 <div style="border-bottom:1px solid #333; padding-bottom:12px;">
@@ -1621,11 +1621,10 @@ function retirerAccueil() {
                 <div style="border-bottom:1px solid #333; padding-bottom:12px;">
                     <strong style="color:#2563eb;">Donner des coups de pied à ton soumis</strong><br>
                     <div style="margin:8px 0 8px 20px; font-size:14px;">
-                        <label style="margin-right:12px;"><input type="checkbox"> au cul</label>
-                        <label style="margin-right:12px;"><input type="checkbox"> dans le ventre</label>
-                        <label style="margin-right:12px;"><input type="checkbox"> castration</label>
-                        <label><input type="checkbox"> dans la tête</label>
-                    </div>
+                    <label style="margin-right:12px;"><input type="checkbox" name="coupsZones" value="cul"> au cul</label>
+                    <label style="margin-right:12px;"><input type="checkbox" name="coupsZones" value="ventre"> dans le ventre</label>
+                    <label style="margin-right:12px;"><input type="checkbox" name="coupsZones" value="castration"> castration</label>
+                    <label><input type="checkbox" name="coupsZones" value="tete"> dans la tête</label>                    </div>
                     <label style="margin-right:15px;"><input type="radio" name="p30"> À découvrir</label>
                     <label style="margin-right:15px;"><input type="radio" name="p30"> Je pratique déjà</label>
                     <label style="margin-right:15px;"><input type="radio" name="p30"> À voir avec la confiance et le temps</label>
@@ -1712,6 +1711,7 @@ function retirerAccueil() {
                 <label style="margin-right:18px;"><input type="checkbox" name="titre" value="Monsieur"> Monsieur</label>
                 <label><input type="checkbox" name="titre" value="Autre" onchange="toggleAutreTitre(this)"> Autre</label>
                 <input type="text" id="autreTitre" placeholder="Préciser le titre..." style="display:none; margin-left:10px; padding:6px; width:200px; background:#222; color:white; border:1px solid #555;">
+            <button type="button" onclick="validerAutre('autreTitre')" style="display:none; margin-left:8px; padding:6px 12px; background:#d4af37; color:#000; border:none; border-radius:6px; font-weight:bold;" id="btnValiderTitre">Valider</button>
             </div>
 
             <div style="margin:15px 0;">
@@ -1723,6 +1723,7 @@ function retirerAccueil() {
                 <label style="margin-right:12px;"><input type="checkbox" name="renommage" value="Tarlouze"> Tarlouze</label>
                 <label><input type="checkbox" name="renommage" value="Autre" onchange="toggleAutreRenommage(this)"> Autre</label>
                 <input type="text" id="autreRenommage" placeholder="Préciser..." style="display:none; margin-left:10px; padding:6px; width:200px; background:#222; color:white; border:1px solid #555;">
+                <button type="button" onclick="validerAutre('autreRenommage')" style="display:none; margin-left:8px; padding:6px 12px; background:#d4af37; color:#000; border:none; border-radius:6px; font-weight:bold;" id="btnValiderRenommage">Valider</button>
             </div>
 
             <h3 style="color:#d4af37; margin-top:30px;">Collier d’appartenance (choix unique)</h3>
@@ -4001,6 +4002,53 @@ function validateContrat(data) {
         if (!modal.querySelector(`input[name="${name}"]:checked`)) {
             return `Tu dois faire un choix pour : ${label}`;
         }
+    // Pratiques baskets : noms corrigés
+    // (déjà couvert si ta liste de pratiques inclut p8, p8b, p8c)
+
+    // Coups de pieds p30
+    const p30 = modal.querySelector('input[name="p30"]:checked');
+    if (!p30) return 'Section 5 : fais un choix pour « Donner des coups de pied ».';
+    const p30txt = p30.parentElement.textContent.trim().toLowerCase();
+    if (!p30txt.includes('ne pratiquerai pas')) {
+        const zones = modal.querySelectorAll('input[name="coupsZones"]:checked');
+        if (!zones.length) {
+            return 'Pour les coups de pieds : choisis au moins une zone (cul, ventre, castration, tête).';
+        }
+    }
+
+    // Vouvoiement / tutoiement : au moins 1
+    const protoLabels = Array.from(modal.querySelectorAll('h3'))
+        .find(h => h.textContent.includes('Traitement et de Protocole'));
+    if (protoLabels) {
+        const texts = ['vouvoiement en public', 'vouvoiement en privé', 'vouvoiement en public et en privé', 'tutoiement autorisé'];
+        const ok = texts.some(t =>
+            Array.from(modal.querySelectorAll('input[type="checkbox"]:checked'))
+                .some(cb => (cb.parentElement?.textContent || '').toLowerCase().includes(t))
+        );
+        if (!ok) {
+            return 'Section 7 : choisis au moins une option de vouvoiement ou tutoiement.';
+        }
+    }
+
+    // Renommage : au moins 1
+    if (!modal.querySelector('input[name="renommage"]:checked')) {
+        return 'Tu dois choisir au moins un renommage du soumis.';
+    }
+
+    // Autre titre / renommage : texte obligatoire + validé
+    const autreTitreCb = modal.querySelector('input[name="titre"][value="Autre"]');
+    if (autreTitreCb && autreTitreCb.checked) {
+        const input = document.getElementById('autreTitre');
+        if (!input || !input.value.trim()) return 'Tu as choisi « Autre » pour le titre : écris le texte.';
+        if (input.dataset.validated !== '1') return 'Clique sur Valider à côté du titre « Autre ».';
+    }
+
+    const autreRenomCb = modal.querySelector('input[name="renommage"][value="Autre"]');
+    if (autreRenomCb && autreRenomCb.checked) {
+        const input = document.getElementById('autreRenommage');
+        if (!input || !input.value.trim()) return 'Tu as choisi « Autre » pour le renommage : écris le texte.';
+        if (input.dataset.validated !== '1') return 'Clique sur Valider à côté du renommage « Autre ».';
+    }
         return null;
     };
 
@@ -4340,6 +4388,43 @@ function uploadMediaFromProfile(pseudo) {
     };
 
     reader.readAsDataURL(file);
+}
+
+function toggleAutreTitre(checkbox) {
+    const input = document.getElementById('autreTitre');
+    const btn = document.getElementById('btnValiderTitre');
+    const show = checkbox.checked;
+    if (input) input.style.display = show ? 'inline-block' : 'none';
+    if (btn) btn.style.display = show ? 'inline-block' : 'none';
+    if (!show && input) {
+        input.value = '';
+        input.dataset.validated = '0';
+    }
+}
+
+function toggleAutreRenommage(checkbox) {
+    const input = document.getElementById('autreRenommage');
+    const btn = document.getElementById('btnValiderRenommage');
+    const show = checkbox.checked;
+    if (input) input.style.display = show ? 'inline-block' : 'none';
+    if (btn) btn.style.display = show ? 'inline-block' : 'none';
+    if (!show && input) {
+        input.value = '';
+        input.dataset.validated = '0';
+    }
+}
+
+function validerAutre(id) {
+    const input = document.getElementById(id);
+    if (!input) return;
+    const val = input.value.trim();
+    if (!val) {
+        alert('Écris un texte avant de valider.');
+        input.dataset.validated = '0';
+        return;
+    }
+    input.dataset.validated = '1';
+    alert('Choix enregistré : ' + val);
 }
 
 </script>
