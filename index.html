@@ -3930,6 +3930,7 @@ function proposerContrat() {
 
         ouvrirContrat(monPseudo, destinataire);
     }, 200);
+}
 
 function collectContratData() {
     const modal = document.getElementById('modalContrat');
@@ -4078,7 +4079,6 @@ function voirContratMessage(index) {
     });
     document.body.appendChild(overlay);
 }
-}
 
 function ouvrirContrat(proprietaire, soumis) {
     document.getElementById('contratProprietaire').textContent = proprietaire || "Propriétaire";
@@ -4086,28 +4086,6 @@ function ouvrirContrat(proprietaire, soumis) {
     document.getElementById('dateSignature').textContent = new Date().toLocaleDateString('fr-FR');
     
     openModal('modalContrat');
-}
-
-function signerContrat() {
-    const proprietaire = document.getElementById('contratProprietaire')?.textContent || 'Propriétaire';
-    const soumis = document.getElementById('contratSoumis')?.textContent || 'Soumis';
-    const date = document.getElementById('dateSignature')?.textContent || new Date().toLocaleDateString('fr-FR');
-
-    alert(
-        '✅ Contrat signé\n\n' +
-        'Propriétaire : ' + proprietaire + '\n' +
-        'Soumis : ' + soumis + '\n' +
-        'Date : ' + date + '\n\n' +
-        'Le contrat d\'appartenance est enregistré (simulation locale).'
-    );
-
-    // Ferme le modal contrat
-    if (typeof closeModal === 'function') {
-        closeModal('modalContrat');
-    } else {
-        const modal = document.getElementById('modalContrat');
-        if (modal) modal.style.display = 'none';
-    }
 }
 
 function toggleAutreTitre(checkbox) {
