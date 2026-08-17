@@ -3873,14 +3873,23 @@ function loadChatHistory(pseudo) {
 
     history.innerHTML = '';
     if (conversations[pseudo]) {
-        conversations[pseudo].forEach(msg => {
+        conversations[pseudo].forEach((msg, i) => {
             const isMe = msg.sender === 'Moi';
-            history.innerHTML += `
-                <div style="align-self:${isMe ? 'flex-end' : 'flex-start'}; background:${isMe ? '#d4af37' : '#333'}; color:${isMe ? 'black' : 'white'}; padding:10px 14px; border-radius:${isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px'}; max-width:75%; margin-bottom:8px;">
-                    ${msg.text}
-                </div>
-            `;
-        });
+if (msg.type === 'contrat' && msg.contrat) {
+    history.innerHTML += `
+        <div onclick="voirContratMessage(${i})"
+             style="align-self:${isMe ? 'flex-end' : 'flex-start'}; background:#2a2a1a; color:#d4af37; padding:12px 14px; border-radius:12px; max-width:85%; margin-bottom:8px; border:1px solid #d4af37; cursor:pointer;">
+            📜 ${msg.text}<br>
+            <span style="font-size:12px; color:#aaa;">Toucher pour lire (non modifiable)</span>
+        </div>
+    `;
+} else {
+    history.innerHTML += `
+        <div style="align-self:${isMe ? 'flex-end' : 'flex-start'}; background:${isMe ? '#d4af37' : '#333'}; color:${isMe ? 'black' : 'white'}; padding:10px 14px; border-radius:${isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px'}; max-width:75%; margin-bottom:8px;">
+            ${msg.text}
+        </div>
+    `;
+}        });
     }
     history.scrollTop = history.scrollHeight;
     loadChatList();
@@ -3921,6 +3930,154 @@ function proposerContrat() {
 
         ouvrirContrat(monPseudo, destinataire);
     }, 200);
+
+function collectContratData() {
+    const modal = document.getElementById('modalContrat');
+    if (!modal) return null;
+
+    const data = {
+        proprietaire: document.getElementById('contratProprietaire')?.textContent || '',
+        soumis: document.getElementById('contratSoumis')?.textContent || '',
+        date: document.getElementById('dateSignature')?.textContent || '',
+        duree: '',
+        choix: []
+    };
+
+    // Durée (obligatoire)
+    const dureeChecked = modal.querySelector('input[name="duree"]:checked');
+    if (dureeChecked) {
+        data.duree = dureeChecked.parentElement.textContent.trim();
+    }
+
+    // Cases cochées + selects associés
+    modal.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        if (!cb.checked) return;
+        let label = cb.parentElement ? cb.parentElement.textContent.trim() : 'Option cochée';
+        label = label.replace(/\s+/g, ' ').trim();
+
+        // Select dans le même label
+        const select = cb.parentElement ? cb.parentElement.querySelector('select') : null;
+        if (select && select.value && select.value !== 'Choisir') {
+            label += ' → ' + select.value;
+        }
+        data.choix.push(label);
+    });
+
+    // Selects cochés via checkbox parent déjà traités ; on ignore le reste
+    return data;
+}
+
+function validateContrat(data) {
+    if (!data) return 'Contrat introuvable.';
+
+    if (!data.duree) {
+        return 'Tu dois choisir une durée de servitude (section 2).';
+    }
+
+    if (!data.choix.length) {
+        return 'Tu dois cocher au moins une contribution / pratique avant de signer.';
+    }
+
+    // Select "Impôt" ou autres : si une case liée a un select encore sur "Choisir"
+    const modal = document.getElementById('modalContrat');
+    const invalidSelect = Array.from(modal.querySelectorAll('label')).some(label => {
+        const cb = label.querySelector('input[type="checkbox"]');
+        const sel = label.querySelector('select');
+        if (cb && cb.checked && sel && (sel.value === 'Choisir' || !sel.value)) {
+            return true;
+        }
+        return false;
+    });
+
+    if (invalidSelect) {
+        return 'Pour chaque case cochée avec un menu, choisis une option (pas "Choisir").';
+    }
+
+    return null; // OK
+}
+
+function signerContrat() {
+    const data = collectContratData();
+    const error = validateContrat(data);
+
+    if (error) {
+        alert('❌ Contrat incomplet\n\n' + error);
+        return;
+    }
+
+    // Enregistrement local simple
+    try {
+        const key = 'sugar_contrats';
+        const all = JSON.parse(localStorage.getItem(key) || '[]');
+        all.unshift({
+            ...data,
+            id: Date.now(),
+            createdAt: new Date().toISOString()
+        });
+        localStorage.setItem(key, JSON.stringify(all));
+    } catch (e) {}
+
+    // Message dans la messagerie (cliquable, non modifiable)
+    const destinataire = currentChatUser || data.soumis || 'Soumis';
+    if (!conversations[destinataire]) conversations[destinataire] = [];
+
+    conversations[destinataire].push({
+        sender: 'Moi',
+        type: 'contrat',
+        text: '📜 Contrat d\'appartenance signé',
+        contrat: data
+    });
+
+    // Ferme le contrat + ouvre la messagerie
+    if (typeof closeModal === 'function') closeModal('modalContrat');
+    else {
+        const m = document.getElementById('modalContrat');
+        if (m) m.style.display = 'none';
+    }
+
+    currentChatUser = destinataire;
+    const msgModal = document.getElementById('modalMessages');
+    if (msgModal) msgModal.style.display = 'flex';
+    loadChatList();
+    loadChatHistory(destinataire);
+
+    alert('✅ Contrat signé et envoyé dans la messagerie.');
+}
+
+function voirContratMessage(index) {
+    const pseudo = currentChatUser;
+    if (!pseudo || !conversations[pseudo] || !conversations[pseudo][index]) return;
+
+    const msg = conversations[pseudo][index];
+    if (!msg.contrat) return;
+
+    const c = msg.contrat;
+    let html = `
+        <div style="background:#1e1e1e; padding:20px; border-radius:12px; max-width:520px; width:92%; max-height:85vh; overflow-y:auto; border:2px solid #d4af37;">
+            <h3 style="color:#d4af37; margin-top:0;">Contrat signé (lecture seule)</h3>
+            <p><strong>Propriétaire :</strong> ${c.proprietaire}</p>
+            <p><strong>Soumis :</strong> ${c.soumis}</p>
+            <p><strong>Date :</strong> ${c.date}</p>
+            <p><strong>Durée :</strong> ${c.duree}</p>
+            <p style="margin-top:14px;"><strong>Éléments cochés :</strong></p>
+            <ul style="padding-left:18px; color:#ddd;">
+                ${c.choix.map(x => `<li>${x}</li>`).join('')}
+            </ul>
+            <button onclick="this.parentElement.parentElement.remove()"
+                    style="margin-top:18px; width:100%; background:#d4af37; color:#000; border:none; padding:12px; border-radius:8px; font-weight:bold;">
+                Fermer
+            </button>
+        </div>
+    `;
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:3000;';
+    overlay.innerHTML = html;
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.remove();
+    });
+    document.body.appendChild(overlay);
+}
 }
 
 function ouvrirContrat(proprietaire, soumis) {
