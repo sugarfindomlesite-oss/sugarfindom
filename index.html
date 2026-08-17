@@ -3931,6 +3931,28 @@ function ouvrirContrat(proprietaire, soumis) {
     openModal('modalContrat');
 }
 
+function signerContrat() {
+    const proprietaire = document.getElementById('contratProprietaire')?.textContent || 'Propriétaire';
+    const soumis = document.getElementById('contratSoumis')?.textContent || 'Soumis';
+    const date = document.getElementById('dateSignature')?.textContent || new Date().toLocaleDateString('fr-FR');
+
+    alert(
+        '✅ Contrat signé\n\n' +
+        'Propriétaire : ' + proprietaire + '\n' +
+        'Soumis : ' + soumis + '\n' +
+        'Date : ' + date + '\n\n' +
+        'Le contrat d\'appartenance est enregistré (simulation locale).'
+    );
+
+    // Ferme le modal contrat
+    if (typeof closeModal === 'function') {
+        closeModal('modalContrat');
+    } else {
+        const modal = document.getElementById('modalContrat');
+        if (modal) modal.style.display = 'none';
+    }
+}
+
 function toggleAutreTitre(checkbox) {
     document.getElementById('autreTitre').style.display = checkbox.checked ? 'inline-block' : 'none';
 }
