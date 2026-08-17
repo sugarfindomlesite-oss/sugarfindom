@@ -3833,11 +3833,32 @@ let conversations = {};
 function openMessagingWith(pseudo) {
     if (!pseudo) return;
 
+    // Vérification connexion
+    let connecte = false;
+    try {
+        const session = localStorage.getItem("sugar_active_session");
+        if (session) {
+            const data = JSON.parse(session);
+            if (data && data.logged === true) connecte = true;
+        }
+    } catch (e) {}
+
+    if (!connecte && typeof sessionSecoursDeconnectee !== "undefined" && sessionSecoursDeconnectee.logged === true) {
+        connecte = true;
+    }
+
+    if (!connecte) {
+        if (typeof openAuthModal === "function") openAuthModal();
+        else if (typeof openModal === "function") openModal('modalConnexion');
+        else alert("Connecte-toi pour discuter.");
+        return;
+    }
+
     currentChatUser = pseudo;
 
-if (!conversations[pseudo]) {
-    conversations[pseudo] = [];
-}
+    if (!conversations[pseudo]) {
+        conversations[pseudo] = [];
+    }
 
     document.querySelectorAll('.modal-overlay').forEach(m => {
         if (m.id !== 'modalMessages') m.style.display = 'none';
@@ -4100,6 +4121,187 @@ function collectContratData() {
     if (position) data.choix.push('Position servile → ' + clean(position.parentElement.textContent));
 
     return data;
+}
+
+function validateContrat(data) {
+    const modal = document.getElementById('modalContrat');
+    if (!modal || !data) return 'Contrat introuvable.';
+
+    const mustHaveRadio = (name, label) => {
+        if (!modal.querySelector('input[name="' + name + '"]:checked')) {
+            return 'Tu dois faire un choix pour : ' + label;
+        }
+        return null;
+    };
+
+    // 2. Durée
+    let err = mustHaveRadio('duree', 'Durée de la servitude (section 2)');
+    if (err) return err;
+
+    // 3. Finances
+    const checkedLabels = Array.from(modal.querySelectorAll('input[type="checkbox"]:checked'))
+        .map(cb => ((cb.parentElement && cb.parentElement.textContent) || '').toLowerCase());
+
+    const hasFinance =
+        checkedLabels.some(t =>
+            t.indexOf('dons') !== -1 ||
+            t.indexOf('impôt') !== -1 ||
+            t.indexOf('impot') !== -1 ||
+            t.indexOf('téléphone') !== -1 ||
+            t.indexOf('telephone') !== -1 ||
+            t.indexOf('internet') !== -1 ||
+            t.indexOf('électricité') !== -1 ||
+            t.indexOf('electricite') !== -1 ||
+            t.indexOf('loyer') !== -1 ||
+            t.indexOf('crédit') !== -1 ||
+            t.indexOf('credit') !== -1 ||
+            t.indexOf('facture') !== -1 ||
+            t.indexOf('vêtements') !== -1 ||
+            t.indexOf('vetements') !== -1
+        ) ||
+        Array.from(modal.querySelectorAll('input[type="checkbox"]')).slice(0, 12).some(cb => cb.checked);
+
+    if (!hasFinance) {
+        return 'Section 3 : coche au moins une contribution financière.';
+    }
+
+    // Impôt mensuel obligatoire + montant
+    const impotLabel = Array.from(modal.querySelectorAll('label')).find(function(l) {
+        const t = (l.textContent || '').toLowerCase();
+        return t.indexOf('impôt') !== -1 || t.indexOf('impot') !== -1;
+    });
+    if (impotLabel) {
+        const cb = impotLabel.querySelector('input[type="checkbox"]');
+        const sel = impotLabel.querySelector('select');
+        if (!cb || !cb.checked) {
+            return 'Section 3 : l’impôt mensuel est obligatoire (coche + montant).';
+        }
+        if (!sel || !sel.value || sel.value === 'Choisir') {
+            return 'Section 3 : choisis le montant de l’impôt mensuel.';
+        }
+    }
+
+    // Selects liés
+    const invalidSelect = Array.from(modal.querySelectorAll('label')).some(function(label) {
+        const cb = label.querySelector('input[type="checkbox"]');
+        const sel = label.querySelector('select');
+        return cb && cb.checked && sel && (sel.value === 'Choisir' || !sel.value);
+    });
+    if (invalidSelect) {
+        return 'Pour chaque case cochée avec un menu, choisis une option (pas "Choisir").';
+    }
+
+    // 4. Niveau
+    err = mustHaveRadio('niveauExp', 'Niveau d’expérience (section 4)');
+    if (err) return err;
+
+    // 5. Toutes les pratiques
+    const pratiques = [
+        'p1','p2','p3','p4','p5','p6','p7','p8','p8b','p8c','p9','p10',
+        'p11','p12','p13','p14','p15','p16','p17','p18','p19','p20',
+        'p21','p22','p23','p24','p25','p26','p27','p28','p28b','p28c','p28d',
+        'p29','p30','p31','p32','p33','p34','p34b','p34c','p35'
+    ];
+    for (let i = 0; i < pratiques.length; i++) {
+        const name = pratiques[i];
+        const group = modal.querySelectorAll('input[name="' + name + '"]');
+        if (!group.length) continue;
+        let ok = false;
+        for (let j = 0; j < group.length; j++) {
+            if (group[j].checked) { ok = true; break; }
+        }
+        if (!ok) {
+            const box = group[0].closest('div');
+            const titre = (box && box.querySelector('strong')) ? box.querySelector('strong').textContent.trim() : name;
+            return 'Section 5 : fais un choix pour « ' + titre + ' ».';
+        }
+    }
+
+    // Coups de pieds
+    const p30 = modal.querySelector('input[name="p30"]:checked');
+    if (p30) {
+        const p30txt = p30.parentElement.textContent.trim().toLowerCase();
+        if (p30txt.indexOf('ne pratiquerai pas') === -1) {
+            const zones = modal.querySelectorAll('input[name="coupsZones"]:checked');
+            if (!zones.length) {
+                return 'Pour les coups de pieds : choisis au moins une zone (cul, ventre, castration, tête).';
+            }
+        }
+    }
+
+    // 6. Corvées
+    const h3s = Array.from(modal.querySelectorAll('h3'));
+    const h6 = h3s.find(function(h) { return h.textContent.indexOf('Tâches et Corvées') !== -1; });
+    if (h6) {
+        let el = h6.nextElementSibling;
+        const taskChecks = [];
+        while (el && el.tagName !== 'H3') {
+            if (el.tagName === 'LABEL') {
+                const cb = el.querySelector('input[type="checkbox"]');
+                if (cb) taskChecks.push(cb);
+            }
+            el = el.nextElementSibling;
+        }
+        if (taskChecks.length && !taskChecks.some(function(cb) { return cb.checked; })) {
+            return 'Section 6 : coche au moins une tâche / corvée.';
+        }
+    }
+
+    // Sexuel
+    err = mustHaveRadio('sexuel', 'Utilisation sexuelle du soumis');
+    if (err) return err;
+
+    // 7. Vouvoiement / tutoiement
+    const texts = ['vouvoiement en public', 'vouvoiement en privé', 'vouvoiement en public et en privé', 'tutoiement autorisé'];
+    const okProto = texts.some(function(t) {
+        return Array.from(modal.querySelectorAll('input[type="checkbox"]:checked')).some(function(cb) {
+            const txt = (cb.parentElement && cb.parentElement.textContent) ? cb.parentElement.textContent.toLowerCase() : '';
+            return txt.indexOf(t) !== -1;
+        });
+    });
+    if (!okProto) {
+        return 'Section 7 : choisis au moins une option de vouvoiement ou tutoiement.';
+    }
+
+    // Titre
+    if (!modal.querySelector('input[name="titre"]:checked')) {
+        return 'Tu dois choisir au moins un titre (Maître, Monsieur, Autre...).';
+    }
+
+    // Renommage
+    if (!modal.querySelector('input[name="renommage"]:checked')) {
+        return 'Tu dois choisir au moins un renommage du soumis.';
+    }
+
+    // Autre titre
+    const autreTitreCb = modal.querySelector('input[name="titre"][value="Autre"]');
+    if (autreTitreCb && autreTitreCb.checked) {
+        const input = document.getElementById('autreTitre');
+        const has =
+            (input && input._autres && input._autres.length > 0) ||
+            (input && input.value.trim() && input.dataset.validated === '1');
+        if (!has) return 'Titre « Autre » : écris un texte et clique Valider.';
+    }
+
+    // Autre renommage
+    const autreRenomCb = modal.querySelector('input[name="renommage"][value="Autre"]');
+    if (autreRenomCb && autreRenomCb.checked) {
+        const input = document.getElementById('autreRenommage');
+        const has =
+            (input && input._autres && input._autres.length > 0) ||
+            (input && input.value.trim() && input.dataset.validated === '1');
+        if (!has) return 'Renommage « Autre » : écris un texte et clique Valider.';
+    }
+
+    // Collier
+    err = mustHaveRadio('collier', 'Collier d’appartenance');
+    if (err) return err;
+
+    // Position
+    err = mustHaveRadio('position', 'Position servile');
+    if (err) return err;
+
+    return null;
 }
 
 function signerContrat() {
