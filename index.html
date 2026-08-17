@@ -3945,238 +3945,161 @@ function collectContratData() {
         choix: []
     };
 
-    // Durée (obligatoire)
-    const dureeChecked = modal.querySelector('input[name="duree"]:checked');
-    if (dureeChecked) {
-        data.duree = dureeChecked.parentElement.textContent.trim();
-    }
-
-    // Radios nommées importantes
-    ['niveauExp', 'sexuel', 'collier', 'position'].forEach(name => {
-        const checked = modal.querySelector(`input[name="${name}"]:checked`);
-        if (checked) {
-            data.choix.push(checked.parentElement.textContent.trim());
-        }
-    });
-
-    // Toutes les pratiques p1...
-    modal.querySelectorAll('input[type="radio"][name^="p"]:checked').forEach(r => {
-        const box = r.closest('div');
-        const titre = box?.querySelector('strong')?.textContent?.trim() || r.name;
-        data.choix.push(titre + ' → ' + r.parentElement.textContent.trim());
-    });
-
-    // Titres
-    modal.querySelectorAll('input[name="titre"]:checked').forEach(cb => {
-        let t = cb.value;
-        if (t === 'Autre') {
-            const txt = document.getElementById('autreTitre')?.value?.trim();
-            t = txt ? ('Autre : ' + txt) : 'Autre';
-        }
-        data.choix.push('Titre : ' + t);
-    });
-
-    // Cases cochées + selects associés
-    modal.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-        if (!cb.checked) return;
-        let label = cb.parentElement ? cb.parentElement.textContent.trim() : 'Option cochée';
-        label = label.replace(/\s+/g, ' ').trim();
-
-        // Select dans le même label
-        const select = cb.parentElement ? cb.parentElement.querySelector('select') : null;
-        if (select && select.value && select.value !== 'Choisir') {
-            label += ' → ' + select.value;
-        }
-        data.choix.push(label);
-    });
-
-    // Selects cochés via checkbox parent déjà traités ; on ignore le reste
-    return data;
-}
-
-function validateContrat(data) {
-    const modal = document.getElementById('modalContrat');
-    if (!modal || !data) return 'Contrat introuvable.';
-
-    const mustHaveRadio = (name, label) => {
-        if (!modal.querySelector('input[name="' + name + '"]:checked')) {
-            return 'Tu dois faire un choix pour : ' + label;
-        }
-        return null;
-    };
+    const clean = (t) => (t || '').replace(/\s+/g, ' ').trim();
 
     // 2. Durée
-    let err = mustHaveRadio('duree', 'Durée de la servitude (section 2)');
-    if (err) return err;
-
-    // 3. Finances
-    const checkedLabels = Array.from(modal.querySelectorAll('input[type="checkbox"]:checked'))
-        .map(cb => (cb.parentElement && cb.parentElement.textContent ? cb.parentElement.textContent : '').toLowerCase());
-
-    const hasFinance =
-        checkedLabels.some(t =>
-            t.indexOf('dons') !== -1 ||
-            t.indexOf('impôt') !== -1 ||
-            t.indexOf('impot') !== -1 ||
-            t.indexOf('téléphone') !== -1 ||
-            t.indexOf('telephone') !== -1 ||
-            t.indexOf('internet') !== -1 ||
-            t.indexOf('électricité') !== -1 ||
-            t.indexOf('electricite') !== -1 ||
-            t.indexOf('loyer') !== -1 ||
-            t.indexOf('crédit') !== -1 ||
-            t.indexOf('credit') !== -1 ||
-            t.indexOf('facture') !== -1 ||
-            t.indexOf('vêtements') !== -1 ||
-            t.indexOf('vetements') !== -1
-        ) ||
-        Array.from(modal.querySelectorAll('input[type="checkbox"]')).slice(0, 12).some(cb => cb.checked);
-
-    if (!hasFinance) {
-        return 'Section 3 : coche au moins une contribution financière.';
+    const dureeChecked = modal.querySelector('input[name="duree"]:checked');
+    if (dureeChecked) {
+        data.duree = clean(dureeChecked.parentElement.textContent);
+        data.choix.push('Durée → ' + data.duree);
     }
 
-    // Impôt mensuel obligatoire + montant
-    const impotLabel = Array.from(modal.querySelectorAll('label')).find(function(l) {
-        const t = (l.textContent || '').toLowerCase();
-        return t.indexOf('impôt') !== -1 || t.indexOf('impot') !== -1;
-    });
-    if (impotLabel) {
-        const cb = impotLabel.querySelector('input[type="checkbox"]');
-        const sel = impotLabel.querySelector('select');
-        if (!cb || !cb.checked) {
-            return 'Section 3 : l’impôt mensuel est obligatoire (coche + montant).';
+    // 3. Finances (checkboxes + selects), dans l'ordre d'apparition
+    // on s'arrête avant la section 4
+    const h3s = Array.from(modal.querySelectorAll('h3'));
+    const h3 = (txt) => h3s.find(h => (h.textContent || '').includes(txt));
+
+    const collectCheckboxesBetween = (fromH3, toH3, prefix) => {
+        if (!fromH3) return;
+        let el = fromH3.nextElementSibling;
+        while (el && el !== toH3) {
+            if (el.tagName === 'LABEL') {
+                const cb = el.querySelector('input[type="checkbox"]');
+                if (cb && cb.checked) {
+                    // ignorer coupsZones ici, traité avec p30
+                    if (cb.name === 'coupsZones') {
+                        el = el.nextElementSibling;
+                        continue;
+                    }
+                    // ignorer titre/renommage ici si on les traite plus bas
+                    if (cb.name === 'titre' || cb.name === 'renommage') {
+                        el = el.nextElementSibling;
+                        continue;
+                    }
+                    let label = clean(el.textContent);
+                    const select = el.querySelector('select');
+                    if (select && select.value && select.value !== 'Choisir') {
+                        label += ' → ' + select.value;
+                    }
+                    data.choix.push((prefix ? prefix + ' ' : '') + label);
+                }
+            }
+            // parfois les labels sont dans un div
+            if (el.tagName === 'DIV') {
+                el.querySelectorAll('label').forEach(lab => {
+                    const cb = lab.querySelector('input[type="checkbox"]');
+                    if (!cb || !cb.checked) return;
+                    if (cb.name === 'coupsZones' || cb.name === 'titre' || cb.name === 'renommage') return;
+                    let label = clean(lab.textContent);
+                    const select = lab.querySelector('select');
+                    if (select && select.value && select.value !== 'Choisir') {
+                        label += ' → ' + select.value;
+                    }
+                    data.choix.push((prefix ? prefix + ' ' : '') + label);
+                });
+            }
+            el = el.nextElementSibling;
         }
-        if (!sel || !sel.value || sel.value === 'Choisir') {
-            return 'Section 3 : choisis le montant de l’impôt mensuel.';
-        }
-    }
+    };
 
-    // Selects liés
-    const invalidSelect = Array.from(modal.querySelectorAll('label')).some(function(label) {
-        const cb = label.querySelector('input[type="checkbox"]');
-        const sel = label.querySelector('select');
-        return cb && cb.checked && sel && (sel.value === 'Choisir' || !sel.value);
-    });
-    if (invalidSelect) {
-        return 'Pour chaque case cochée avec un menu, choisis une option (pas "Choisir").';
-    }
+    collectCheckboxesBetween(h3('3. Contributions'), h3('4. Niveau'), '');
 
     // 4. Niveau
-    err = mustHaveRadio('niveauExp', 'Niveau d’expérience (section 4)');
-    if (err) return err;
+    const niveau = modal.querySelector('input[name="niveauExp"]:checked');
+    if (niveau) data.choix.push('Niveau d’expérience → ' + clean(niveau.parentElement.textContent));
 
-    // 5. Toutes les pratiques
-    const pratiques = [
+    // 5. Pratiques : chaque bloc strong + radio + sous-options regroupées
+    const pratiqueNames = [
         'p1','p2','p3','p4','p5','p6','p7','p8','p8b','p8c','p9','p10',
         'p11','p12','p13','p14','p15','p16','p17','p18','p19','p20',
         'p21','p22','p23','p24','p25','p26','p27','p28','p28b','p28c','p28d',
         'p29','p30','p31','p32','p33','p34','p34b','p34c','p35'
     ];
-    for (let i = 0; i < pratiques.length; i++) {
-        const name = pratiques[i];
-        const group = modal.querySelectorAll('input[name="' + name + '"]');
-        if (!group.length) continue;
-        let ok = false;
-        for (let j = 0; j < group.length; j++) {
-            if (group[j].checked) { ok = true; break; }
-        }
-        if (!ok) {
-            const box = group[0].closest('div');
-            const titre = (box && box.querySelector('strong')) ? box.querySelector('strong').textContent.trim() : name;
-            return 'Section 5 : fais un choix pour « ' + titre + ' ».';
-        }
-    }
 
-    // Coups de pieds : zones si pas "ne pratiquerai pas"
-    const p30 = modal.querySelector('input[name="p30"]:checked');
-    if (p30) {
-        const p30txt = p30.parentElement.textContent.trim().toLowerCase();
-        if (p30txt.indexOf('ne pratiquerai pas') === -1) {
-            const zones = modal.querySelectorAll('input[name="coupsZones"]:checked');
-            if (!zones.length) {
-                return 'Pour les coups de pieds : choisis au moins une zone (cul, ventre, castration, tête).';
+    pratiqueNames.forEach(name => {
+        const checked = modal.querySelector('input[name="' + name + '"]:checked');
+        if (!checked) return;
+
+        const box = checked.closest('div');
+        const titre = box?.querySelector('strong')?.textContent?.trim() || name;
+        let ligne = titre + ' → ' + clean(checked.parentElement.textContent);
+
+        // Sous-options du même bloc (ex: coupsZones)
+        if (box) {
+            const sub = [];
+            box.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+                sub.push(clean(cb.parentElement.textContent));
+            });
+            if (sub.length) {
+                ligne += ' | Zones : ' + sub.join(', ');
             }
         }
-    }
+
+        data.choix.push(ligne);
+    });
 
     // 6. Corvées
-    const h3s = Array.from(modal.querySelectorAll('h3'));
-    const h6 = h3s.find(function(h) { return h.textContent.indexOf('Tâches et Corvées') !== -1; });
-    if (h6) {
-        let el = h6.nextElementSibling;
-        const taskChecks = [];
-        while (el && el.tagName !== 'H3') {
+    collectCheckboxesBetween(h3('Tâches et Corvées'), h3('Utilisation sexuelle'), 'Corvée →');
+
+    // Sexuel
+    const sexuel = modal.querySelector('input[name="sexuel"]:checked');
+    if (sexuel) data.choix.push('Utilisation sexuelle → ' + clean(sexuel.parentElement.textContent));
+
+    // 7. Traitement / protocole (checkboxes sans name titre/renommage)
+    const h7 = h3('Traitement et de Protocole');
+    const hCollier = h3('Collier');
+    if (h7) {
+        let el = h7.nextElementSibling;
+        while (el && el !== hCollier) {
             if (el.tagName === 'LABEL') {
                 const cb = el.querySelector('input[type="checkbox"]');
-                if (cb) taskChecks.push(cb);
+                if (cb && cb.checked && !cb.name) {
+                    data.choix.push('Protocole → ' + clean(el.textContent));
+                }
+            }
+            if (el.tagName === 'DIV') {
+                // Titre
+                el.querySelectorAll('input[name="titre"]:checked').forEach(cb => {
+                    let t = cb.value;
+                    if (t === 'Autre') {
+                        const input = document.getElementById('autreTitre');
+                        if (input && input._autres && input._autres.length) {
+                            t = 'Autre : ' + input._autres.join(', ');
+                        } else {
+                            const txt = input?.value?.trim();
+                            t = txt ? ('Autre : ' + txt) : 'Autre';
+                        }
+                    }
+                    data.choix.push('Titre → ' + t);
+                });
+                // Renommage
+                el.querySelectorAll('input[name="renommage"]:checked').forEach(cb => {
+                    let t = cb.value;
+                    if (t === 'Autre') {
+                        const input = document.getElementById('autreRenommage');
+                        if (input && input._autres && input._autres.length) {
+                            t = 'Autre : ' + input._autres.join(', ');
+                        } else {
+                            const txt = input?.value?.trim();
+                            t = txt ? ('Autre : ' + txt) : 'Autre';
+                        }
+                    }
+                    data.choix.push('Renommage → ' + t);
+                });
             }
             el = el.nextElementSibling;
         }
-        if (taskChecks.length && !taskChecks.some(function(cb) { return cb.checked; })) {
-            return 'Section 6 : coche au moins une tâche / corvée.';
-        }
     }
-
-    // Sexuel
-    err = mustHaveRadio('sexuel', 'Utilisation sexuelle du soumis');
-    if (err) return err;
-
-    // 7. Vouvoiement / tutoiement
-    const texts = ['vouvoiement en public', 'vouvoiement en privé', 'vouvoiement en public et en privé', 'tutoiement autorisé'];
-    const okProto = texts.some(function(t) {
-        return Array.from(modal.querySelectorAll('input[type="checkbox"]:checked')).some(function(cb) {
-            const txt = (cb.parentElement && cb.parentElement.textContent) ? cb.parentElement.textContent.toLowerCase() : '';
-            return txt.indexOf(t) !== -1;
-        });
-    });
-    if (!okProto) {
-        return 'Section 7 : choisis au moins une option de vouvoiement ou tutoiement.';
-    }
-
-    // Titre
-    if (!modal.querySelector('input[name="titre"]:checked')) {
-        return 'Tu dois choisir au moins un titre (Maître, Monsieur, Autre...).';
-    }
-
-    // Renommage
-    if (!modal.querySelector('input[name="renommage"]:checked')) {
-        return 'Tu dois choisir au moins un renommage du soumis.';
-    }
-
-// Autre titre
-const autreTitreCb = modal.querySelector('input[name="titre"][value="Autre"]');
-if (autreTitreCb && autreTitreCb.checked) {
-    const input = document.getElementById('autreTitre');
-    const has =
-        (input && input._autres && input._autres.length > 0) ||
-        (input && input.value.trim() && input.dataset.validated === '1');
-    if (!has) {
-        return 'Titre « Autre » : écris un texte et clique Valider.';
-    }
-}
-
-// Autre renommage
-const autreRenomCb = modal.querySelector('input[name="renommage"][value="Autre"]');
-if (autreRenomCb && autreRenomCb.checked) {
-    const input = document.getElementById('autreRenommage');
-    const has =
-        (input && input._autres && input._autres.length > 0) ||
-        (input && input.value.trim() && input.dataset.validated === '1');
-    if (!has) {
-        return 'Renommage « Autre » : écris un texte et clique Valider.';
-    }
-}
 
     // Collier
-    err = mustHaveRadio('collier', 'Collier d’appartenance');
-    if (err) return err;
+    const collier = modal.querySelector('input[name="collier"]:checked');
+    if (collier) data.choix.push('Collier → ' + clean(collier.parentElement.textContent));
 
     // Position
-    err = mustHaveRadio('position', 'Position servile');
-    if (err) return err;
+    const position = modal.querySelector('input[name="position"]:checked');
+    if (position) data.choix.push('Position servile → ' + clean(position.parentElement.textContent));
 
-    return null;
+    return data;
 }
 
 function signerContrat() {
