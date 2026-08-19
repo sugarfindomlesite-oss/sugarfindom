@@ -1420,10 +1420,10 @@ function retirerAccueil() {
 
                 <div style="border-bottom:1px solid #333; padding-bottom:12px;">
                     <strong style="color:#2563eb;">Te faire retirer tes chaussettes avec les dents de ton soumis</strong><br>
-                    <label style="margin-right:15px;"><input type="radio" name="p8"> À découvrir</label>
-                    <label style="margin-right:15px;"><input type="radio" name="p8"> Je pratique déjà</label>
-                    <label style="margin-right:15px;"><input type="radio" name="p8"> À voir avec la confiance et le temps</label>
-                    <label><input type="radio" name="p8"> Je ne pratiquerai pas</label>
+                    <label style="margin-right:15px;"><input type="radio" name="p8c"> À découvrir</label>
+                    <label style="margin-right:15px;"><input type="radio" name="p8c"> Je pratique déjà</label>
+                    <label style="margin-right:15px;"><input type="radio" name="p8c"> À voir avec la confiance et le temps</label>
+                    <label><input type="radio" name="p8c"> Je ne pratiquerai pas</label>
                 </div>
 
                 <div style="border-bottom:1px solid #333; padding-bottom:12px;">
@@ -3930,6 +3930,26 @@ function sendMessage() {
 }
 
 function toggleMessagingBox() {
+    let connecte = false;
+    try {
+        const session = localStorage.getItem("sugar_active_session");
+        if (session) {
+            const data = JSON.parse(session);
+            if (data && data.logged === true) connecte = true;
+        }
+    } catch (e) {}
+
+    if (!connecte && typeof sessionSecoursDeconnectee !== "undefined" && sessionSecoursDeconnectee.logged === true) {
+        connecte = true;
+    }
+
+    if (!connecte) {
+        if (typeof openAuthModal === "function") openAuthModal();
+        else if (typeof openModal === "function") openModal('modalConnexion');
+        else alert("Connecte-toi pour accéder à la messagerie.");
+        return;
+    }
+
     document.getElementById('modalMessages').style.display = 'flex';
     loadChatList();
 }
