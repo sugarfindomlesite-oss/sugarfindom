@@ -4535,6 +4535,32 @@ try {
 } catch (e) {
     console.error('Erreur envoi contrat Supabase :', e);
 }
+// Enregistre aussi le contrat comme message (pour qu'il réapparaisse après rechargement)
+try {
+    let monPseudo = "Moi";
+    try {
+        const session = JSON.parse(localStorage.getItem("sugar_active_session") || "{}");
+        if (session && session.pseudo) monPseudo = session.pseudo;
+    } catch (e) {}
+
+    const destinataireTemp = currentChatUser || data.soumis || 'Soumis';
+
+    supabaseClient
+        .from('messages')
+        .insert([{
+            from_pseudo: monPseudo,
+            to_pseudo: destinataireTemp,
+            text: "📜 Contrat d'appartenance signé",
+            type: "contrat",
+            contrat_json: JSON.stringify(data)
+        }])
+        .then(({ error }) => {
+            if (error) console.error('Erreur message contrat :', error);
+            else console.log('Contrat aussi enregistré dans messages');
+        });
+} catch (e) {
+    console.error(e);
+}
 
     // Message dans la messagerie (cliquable, non modifiable)
     const destinataire = currentChatUser || data.soumis || 'Soumis';
