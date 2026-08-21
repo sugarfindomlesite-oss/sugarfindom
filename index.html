@@ -3981,36 +3981,80 @@ function loadChatList() {
     });
 }
 
-function loadChatHistory(pseudo) {
-    currentChatUser = pseudo;
+async function loadChatHistory(pseudo) {
     const history = document.getElementById('chat-history');
-    const header = document.getElementById('chat-header');
-    if (!history || !header) return;
+    if (!history) return;
 
-    header.innerHTML = `<strong style="font-size:18px;">${pseudo}</strong>`;
+    history.innerHTML = '<p style="color:#888; text-align:center; padding:20px;">Chargement des messages...</p>';
 
-    history.innerHTML = '';
-    if (conversations[pseudo]) {
-        conversations[pseudo].forEach((msg, i) => {
-            const isMe = msg.sender === 'Moi';
-if (msg.type === 'contrat' && msg.contrat) {
-    history.innerHTML += `
-        <div onclick="voirContratMessage(${i})"
-             style="align-self:${isMe ? 'flex-end' : 'flex-start'}; background:#2a2a1a; color:#d4af37; padding:12px 14px; border-radius:12px; max-width:85%; margin-bottom:8px; border:1px solid #d4af37; cursor:pointer;">
-            📜 ${msg.text}<br>
-            <span style="font-size:12px; color:#aaa;">Toucher pour lire (non modifiable)</span>
-        </div>
-    `;
-} else {
-    history.innerHTML += `
-        <div style="align-self:${isMe ? 'flex-end' : 'flex-start'}; background:${isMe ? '#d4af37' : '#333'}; color:${isMe ? 'black' : 'white'}; padding:10px 14px; border-radius:${isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px'}; max-width:75%; margin-bottom:8px;">
-            ${msg.text}
-        </div>
-    `;
-}        });
+    // Pseudo de la personne connectée
+    let monPseudo = "Moi";
+    try {
+        const session = JSON.parse(localStorage.getItem("sugar_active_session") || "{}");
+        if (session && session.pseudo) monPseudo = session.pseudo;
+    } catch (e) {}
+
+    // 1. On récupère les messages depuis Supabase
+    try {
+        const { data, error } = await supabaseClient
+            .from('messages')
+            .select('*')
+            .or(`and(from_pseudo.eq.${monPseudo},to_pseudo.eq.${pseudo}),and(from_pseudo.eq.${pseudo},to_pseudo.eq.${monPseudo})`)
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            console.error('Erreur chargement messages :', error);
+            history.innerHTML = '<p style="color:#ff5555; text-align:center;">Erreur de chargement</p>';
+            return;
+        }
+
+        // 2. On reconstruit la conversation
+        conversations[pseudo] = [];
+        if (data && data.length > 0) {
+            data.forEach(msg => {
+                const isMe = msg.from_pseudo === monPseudo;
+                conversations[pseudo].push({
+                    sender: isMe ? 'Moi' : msg.from_pseudo,
+                    text: msg.text,
+                    type: msg.type || 'text',
+                    contrat: msg.contrat_json ? JSON.parse(msg.contrat_json) : null
+                });
+            });
+        }
+    } catch (e) {
+        console.error('Erreur Supabase loadChatHistory :', e);
     }
+
+    // 3. Affichage
+    history.innerHTML = '';
+    if (!conversations[pseudo] || conversations[pseudo].length === 0) {
+        history.innerHTML = '<p style="color:#888; text-align:center; padding:20px;">Aucun message pour le moment</p>';
+        return;
+    }
+
+    conversations[pseudo].forEach((msg, i) => {
+        if (msg.type === 'contrat') {
+            history.innerHTML += `
+                <div style="margin:10px 0; text-align:center;">
+                    <button onclick="voirContratMessage(${i})" 
+                            style="background:#1e1e1e; border:1px solid #d4af37; color:#d4af37; padding:10px 18px; border-radius:8px; cursor:pointer;">
+                        📜 Contrat d'appartenance signé (cliquer pour lire)
+                    </button>
+                </div>`;
+        } else {
+            const align = msg.sender === 'Moi' ? 'right' : 'left';
+            const bg = msg.sender === 'Moi' ? '#2563eb' : '#333';
+            history.innerHTML += `
+                <div style="text-align:${align}; margin:8px 0;">
+                    <span style="display:inline-block; background:${bg}; color:white; padding:8px 14px; border-radius:12px; max-width:75%;">
+                        ${msg.text}
+                    </span>
+                </div>`;
+        }
+    });
+
+    // Scroll en bas
     history.scrollTop = history.scrollHeight;
-    loadChatList();
 }
 
 function sendMessage() {
