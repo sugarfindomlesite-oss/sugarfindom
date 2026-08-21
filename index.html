@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -388,6 +389,13 @@ html, body {
 
 }
 </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      const SUPABASE_URL = "https://amkniuxsdfegltqionti.supabase.co";
+      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFta25pdXhzZGZlZ2x0cWlvbnRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwOTUwNDEsImV4cCI6MjEwMjY3MTA0MX0.zcC1m7e7qDFt3-HydErqGbuevzA6uZs4MrCTv2W5hQQ";
+      const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
 
 </head>
 
@@ -3339,32 +3347,94 @@ function validateFullQuestionnaire() {
         return;
     }
 
-     // Si tout est valide :
-    const pseudo = document.getElementById('hPseudo').value.trim();
-    const email = document.getElementById('hEmail').value.trim();
-    const pass = document.getElementById('hPass').value;
+// Si tout est valide :
+const pseudo = document.getElementById('hPseudo').value.trim();
+const email = document.getElementById('hEmail').value.trim();
+const pass = document.getElementById('hPass').value;
+const age = parseInt(document.getElementById('hAge').value) || 30;
+const ville = document.getElementById('hVille').value.trim();
+const dept = document.getElementById('hDept') ? document.getElementById('hDept').value : "53";
 
-    alert("🎉 Inscription finalisée avec succès ! Bienvenue sur SugarFindom.");
-    closeModal('modalQuestionnaire');
+// Construction des détails (mensurations)
+const details = [
+    document.getElementById('hCheveux')?.value,
+    document.getElementById('hLongueur')?.value,
+    document.getElementById('hYeux')?.value,
+    document.getElementById('hTaille')?.value,
+    document.getElementById('hPoids')?.value,
+    document.getElementById('hPointure')?.value,
+    document.getElementById('hPantalon')?.value,
+    document.getElementById('hTshirt')?.value
+].filter(Boolean).join(' | ');
 
-    // === CONNEXION AUTOMATIQUE HÉTÉRO ===
-    try {
-        localStorage.setItem("sugar_saved_email", email);
-        localStorage.setItem("sugar_saved_pass", pass);
-        localStorage.setItem("sugar_active_session", JSON.stringify({
-            pseudo: pseudo,
-            role: "hetero",
-            logged: true
-        }));
-    } catch (e) {}
+const photoUrl = "https://i.imgur.com/ZyjTgD7.jpeg"; // photo par défaut hétéro
 
-    sessionSecoursDeconnectee = { pseudo: pseudo, role: "hetero", logged: true };
+// 1. Création de l'objet profil
+const nouveauHetero = {
+    id: Date.now(),
+    pseudo: pseudo,
+    email: email,
+    age: age,
+    role: "hetero",
+    dept: dept,
+    ville: ville,
+    marital: "Célibataire",
+    exp: "Débutant",
+    details: details || "Hétéro Alpha",
+    contrat: "Ouvert aux propositions",
+    photo: photoUrl,
+    en_ligne: true
+};
 
-    // Mise à jour du header + boutons
-    majHeaderMembreConnecte(pseudo, "hetero");
+// 2. Ajout dans la liste locale (pour qu'il s'affiche tout de suite)
+baseProfils.unshift(nouveauHetero);
 
-    console.log("Données récoltées :", donneesFinales);
+// 3. Enregistrement dans Supabase
+try {
+    supabaseClient
+        .from('profiles')
+        .insert([{
+            pseudo: nouveauHetero.pseudo,
+            role: 'hetero',
+            email: nouveauHetero.email || null,
+            age: nouveauHetero.age || null,
+            dept: nouveauHetero.dept || null,
+            ville: nouveauHetero.ville || null,
+            details: nouveauHetero.details || null,
+            photo: nouveauHetero.photo || null,
+            en_ligne: true
+        }])
+        .then(({ data, error }) => {
+            if (error) {
+                console.error('Erreur Supabase (hétéro) :', error);
+                alert("Profil créé en local, mais erreur Supabase : " + error.message);
+            } else {
+                console.log('Profil hétéro enregistré dans Supabase');
+            }
+        });
+} catch (e) {
+    console.error('Erreur envoi Supabase hétéro :', e);
 }
+
+// 4. Connexion automatique
+try {
+    localStorage.setItem("sugar_saved_email", email);
+    localStorage.setItem("sugar_saved_pass", pass);
+    localStorage.setItem("sugar_active_session", JSON.stringify({
+        pseudo: pseudo,
+        role: "hetero",
+        logged: true
+    }));
+} catch (e) {}
+
+sessionSecoursDeconnectee = { pseudo: pseudo, role: "hetero", logged: true };
+
+// 5. Mise à jour interface
+majHeaderMembreConnecte(pseudo, "hetero");
+if (typeof triggerFilter === "function") triggerFilter();
+
+alert("🎉 Inscription hétéro validée !\nBienvenue sur SugarFindom.");
+closeModal('modalQuestionnaire');
 
 function validateSoumisInscription() {
     const pseudo = document.getElementById('soumisPseudo').value.trim();
@@ -3429,6 +3499,31 @@ function validateSoumisInscription() {
 
     // Ajout à la base locale
     baseProfils.unshift(nouveauSoumis);
+// Enregistrement aussi dans Supabase
+try {
+    supabaseClient
+        .from('profiles')
+        .insert([{
+            pseudo: nouveauSoumis.pseudo,
+            role: 'soumis',
+            email: nouveauSoumis.email || null,
+            age: nouveauSoumis.age || null,
+            dept: nouveauSoumis.dept || null,
+            ville: nouveauSoumis.ville || null,
+            details: nouveauSoumis.details || null,
+            photo: nouveauSoumis.photo || null,
+            en_ligne: true
+        }])
+        .then(({ data, error }) => {
+            if (error) {
+                console.error('Erreur Supabase (soumis) :', error);
+            } else {
+                console.log('Profil soumis enregistré dans Supabase');
+            }
+        });
+} catch (e) {
+    console.error('Erreur envoi Supabase :', e);
+}
     if (typeof triggerFilter === "function") triggerFilter();
 
     // === CONNEXION AUTOMATIQUE ===
