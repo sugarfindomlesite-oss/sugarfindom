@@ -4018,11 +4018,41 @@ function sendMessage() {
     if (!input || !input.value.trim() || !currentChatUser) return;
 
     const text = input.value.trim();
+
+    // Pseudo de la personne connectée
+    let monPseudo = "Moi";
+    try {
+        const session = JSON.parse(localStorage.getItem("sugar_active_session") || "{}");
+        if (session && session.pseudo) monPseudo = session.pseudo;
+    } catch (e) {}
+
+    // 1. Affichage immédiat
     if (!conversations[currentChatUser]) conversations[currentChatUser] = [];
     conversations[currentChatUser].push({ sender: 'Moi', text: text });
 
     input.value = '';
     loadChatHistory(currentChatUser);
+
+    // 2. Enregistrement dans Supabase
+    try {
+        supabaseClient
+            .from('messages')
+            .insert([{
+                from_pseudo: monPseudo,
+                to_pseudo: currentChatUser,
+                text: text,
+                type: 'text'
+            }])
+            .then(({ data, error }) => {
+                if (error) {
+                    console.error('Erreur envoi message Supabase :', error);
+                } else {
+                    console.log('Message enregistré dans Supabase');
+                }
+            });
+    } catch (e) {
+        console.error('Erreur Supabase message :', e);
+    }
 }
 
 function toggleMessagingBox() {
@@ -4430,16 +4460,37 @@ function signerContrat() {
     }
 
     // Enregistrement local simple
-    try {
-        const key = 'sugar_contrats';
-        const all = JSON.parse(localStorage.getItem(key) || '[]');
-        all.unshift({
-            ...data,
-            id: Date.now(),
-            createdAt: new Date().toISOString()
+try {
+    const key = 'sugar_contrats';
+    const all = JSON.parse(localStorage.getItem(key) || '[]');
+    all.unshift({
+        ...data,
+        id: Date.now(),
+        createdAt: new Date().toISOString()
+    });
+    localStorage.setItem(key, JSON.stringify(all));
+} catch (e) {}
+
+// Enregistrement dans Supabase
+try {
+    supabaseClient
+        .from('contrats')
+        .insert([{
+            proprietaire: data.proprietaire || null,
+            soumis: data.soumis || null,
+            duree: data.duree || null,
+            contenu_json: JSON.stringify(data)
+        }])
+        .then(({ data: res, error }) => {
+            if (error) {
+                console.error('Erreur contrat Supabase :', error);
+            } else {
+                console.log('Contrat enregistré dans Supabase');
+            }
         });
-        localStorage.setItem(key, JSON.stringify(all));
-    } catch (e) {}
+} catch (e) {
+    console.error('Erreur envoi contrat Supabase :', e);
+}
 
     // Message dans la messagerie (cliquable, non modifiable)
     const destinataire = currentChatUser || data.soumis || 'Soumis';
