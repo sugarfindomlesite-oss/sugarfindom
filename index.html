@@ -2913,6 +2913,57 @@ const baseProfils = [
     accessoires: ["collier_laisse"] }
 ];
 
+// Charger les vrais profils depuis Supabase
+async function chargerProfilsSupabase() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Erreur chargement profils :', error);
+            return;
+        }
+
+        if (data && data.length > 0) {
+            // On ajoute les profils Supabase en haut de la liste
+            data.forEach(p => {
+                // Évite les doublons de pseudo
+                if (!baseProfils.some(bp => bp.pseudo === p.pseudo)) {
+                    baseProfils.unshift({
+                        id: p.id || Date.now(),
+                        pseudo: p.pseudo,
+                        role: p.role || 'hetero',
+                        age: p.age || null,
+                        dept: p.dept || '',
+                        ville: p.ville || '',
+                        details: p.details || '',
+                        photo: p.photo || 'https://i.imgur.com/ZyjTgD7.jpeg',
+                        en_ligne: p.en_ligne !== false,
+                        marital: 'Célibataire',
+                        exp: 'Débutant',
+                        contrat: 'Ouvert aux propositions'
+                    });
+                }
+            });
+
+            // Rafraîchit l'affichage
+            if (typeof triggerFilter === 'function') {
+                triggerFilter();
+            }
+            console.log(data.length + ' profils chargés depuis Supabase');
+        }
+    } catch (e) {
+        console.error('Erreur chargerProfilsSupabase :', e);
+    }
+}
+
+// Lancer le chargement dès que la page est prête
+document.addEventListener('DOMContentLoaded', function() {
+    chargerProfilsSupabase();
+});
+
 function openModal(id) {
     document.getElementById(id).style.display = 'flex';
 }
@@ -3467,11 +3518,7 @@ function validateSoumisInscription() {
     }
 
     // Gestion de la photo par défaut ou téléchargée
-    let photoUrl = "https://i.imgur.com/Si8205z.jpeg"; 
-    if (photoInput.files && photoInput.files[0]) {
-        photoUrl = URL.createObjectURL(photoInput.files[0]);
-    }
-
+    let photoUrl = "https://i.imgur.com/Si8205z.jpeg"; // photo par défaut (plus fiable pour l’instant)
     // Récupération des accessoires cochés
     const accessoiresCoches = [];
     document.querySelectorAll('input[name="accessoire"]:checked').forEach(cb => {
@@ -3494,7 +3541,6 @@ function validateSoumisInscription() {
         contrat: "En recherche active de maître",
         enLigne: true,
         photo: photoUrl,
-        motDePasse: pass,
         accessoires: accessoiresCoches          // ← ligne ajoutée
     };
 
