@@ -397,6 +397,16 @@ html, body {
       const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
 
+  ... (tout le reste de ton head) ...
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://amkniuxsdfegltqionti.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFta25pdXhzZGZlZ2x0cWlvbnRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwOTUwNDEsImV4cCI6MjEwMjY3MTA0MX0.zcC1m7e7qDFt3-HydErqGbuevzA6uZs4MrCTv2W5hQQ';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+
 </head>
 
 <body>
