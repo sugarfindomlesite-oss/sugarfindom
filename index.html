@@ -3134,7 +3134,22 @@ if (monPseudoActuel && monPseudoActuel.toLowerCase() === p.pseudo.toLowerCase())
         </div>
     `;
 }
-const medias = (typeof userGalleryMedia !== 'undefined' && Array.isArray(userGalleryMedia))
+    // Album perso (visible par tous sur la fiche)
+    try {
+        const medias = (typeof userGalleryMedia !== 'undefined' && Array.isArray(userGalleryMedia))
+            ? userGalleryMedia.filter(m => m.addedBy && m.addedBy.toLowerCase() === (p.pseudo || '').toLowerCase())
+            : [];
+        html += `<h4 style="margin-top:20px; color:#d4af37;">Album du profil</h4>
+                 <div id="album-wrap-${p.pseudo}" class="album-profil-wrap" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; min-height:10px;">`;
+        medias.forEach(function(m) {
+            if (m.type === 'video') {
+                html += `<video src="${m.src}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;" muted></video>`;
+            } else {
+                html += `<img src="${m.src}" onclick="openMedia('image', this.src)" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #555;cursor:pointer;">`;
+            }
+        });
+        html += `</div>`;
+    } catch (e) {}
 
     // Bouton Discuter uniquement si ce n'est PAS mon propre profil
     if (!monPseudoActuel || monPseudoActuel.toLowerCase() !== p.pseudo.toLowerCase()) {
@@ -3525,7 +3540,7 @@ const finirInscriptionHetero = function(photoFinale) {
     }
 
     try {
-        localStorage.setItem("sugar_saved_email", email);
+        localStorage.setItem("sugar_saved_email", pseudo);
         localStorage.setItem("sugar_saved_pass", pass);
         localStorage.setItem("sugar_active_session", JSON.stringify({
             pseudo: pseudo,
@@ -3648,7 +3663,7 @@ function validateSoumisInscription() {
         if (typeof triggerFilter === "function") triggerFilter();
 
         try {
-            localStorage.setItem("sugar_saved_email", email);
+            localStorage.setItem("sugar_saved_email", pseudo);
             localStorage.setItem("sugar_saved_pass", pass);
             localStorage.setItem("sugar_active_session", JSON.stringify({
                 pseudo: pseudo,
