@@ -3508,15 +3508,6 @@ const finirInscriptionHetero = function(photoFinale) {
     baseProfils.unshift(nouveauHetero);
 
     // Album perso + galerie
-    if (photoFinale && photoFinale.indexOf('data:') === 0) {
-        userGalleryMedia.unshift({
-            type: 'image',
-            src: photoFinale,
-            addedBy: pseudo,
-            date: new Date().toISOString()
-        });
-        if (typeof saveGalleryMedia === 'function') saveGalleryMedia();
-    }
 
     try {
         supabaseClient
