@@ -637,6 +637,22 @@ document.addEventListener("DOMContentLoaded", function() {
             document.getElementById('popup-game-container').style.display = 'flex';
         };
     }
+    // Restaurer la session si déjà connecté
+    try {
+        const session = JSON.parse(localStorage.getItem("sugar_active_session") || "{}");
+        if (session && session.logged && session.pseudo) {
+            if (typeof majHeaderMembreConnecte === "function") {
+                majHeaderMembreConnecte(session.pseudo, session.role || "hetero");
+            }
+            if (typeof sessionSecoursDeconnectee !== "undefined") {
+                sessionSecoursDeconnectee = {
+                    pseudo: session.pseudo,
+                    role: session.role || "hetero",
+                    logged: true
+                };
+            }
+        }
+    } catch (e) {}
 });
 
     // Efface complètement les calques supérieurs sans perturber votre page de profils
@@ -3390,6 +3406,14 @@ function gererExclusiviteCheckbox(checkbox) {
 
 // Fonction de validation mise à jour pour s'assurer que tout est bien rempli
 function validateFullQuestionnaire() {
+    // Déjà connecté → pas de nouvelle inscription
+    try {
+        const session = JSON.parse(localStorage.getItem("sugar_active_session") || "{}");
+        if (session && session.logged && session.pseudo) {
+            alert("Tu es déjà connecté en tant que " + session.pseudo + ". Déconnecte-toi d’abord pour créer un autre compte.");
+            return;
+        }
+    } catch (e) {}
     let niveau = document.getElementById('qNiveau').value;
     if (!niveau) {
         alert("❌ Veuillez choisir votre niveau d'expérience général.");
@@ -3548,11 +3572,19 @@ if (photoInputH && photoInputH.files && photoInputH.files[0]) {
     };
     reader.readAsDataURL(photoInputH.files[0]);
 } else {
-    finirInscriptionHetero("https://i.imgur.com/ZyjTgD7.jpeg");
+    finirInscriptionHetero("https://i.imgur.com/j9jJ89k.jpeg");
 }
 }
 
 function validateSoumisInscription() {
+    // Déjà connecté → pas de nouvelle inscription
+    try {
+        const session = JSON.parse(localStorage.getItem("sugar_active_session") || "{}");
+        if (session && session.logged && session.pseudo) {
+            alert("Tu es déjà connecté en tant que " + session.pseudo + ". Déconnecte-toi d’abord pour créer un autre compte.");
+            return;
+        }
+    } catch (e) {}
     const pseudo = document.getElementById('soumisPseudo').value.trim();
     const email = document.getElementById('soumisEmail').value.trim();
     const pass = document.getElementById('soumisPass').value;
@@ -3607,17 +3639,6 @@ function validateSoumisInscription() {
         };
 
         baseProfils.unshift(nouveauSoumis);
-
-        // Album perso + galerie si photo perso
-        if (photoFinale && photoFinale.indexOf('data:') === 0) {
-            userGalleryMedia.unshift({
-                type: 'image',
-                src: photoFinale,
-                addedBy: pseudo,
-                date: new Date().toISOString()
-            });
-            if (typeof saveGalleryMedia === 'function') saveGalleryMedia();
-        }
 
         try {
             supabaseClient
@@ -4849,20 +4870,62 @@ function uploadMediaFromProfile(pseudo) {
     reader.onload = function(e) {
         const media = {
             type: isVideo ? 'video' : 'image',
-            src: e.target.result,          // base64
+            src: e.target.result,
             addedBy: pseudo,
             date: new Date().toISOString()
         };
 
-        userGalleryMedia.unshift(media);   // en haut de la galerie
+        userGalleryMedia.unshift(media);
         saveGalleryMedia();
 
-        alert("✅ " + (isVideo ? "Vidéo" : "Photo") + " ajoutée à la Galerie !");
-        
-        // Si la galerie est déjà ouverte, on la rafraîchit
-        if (document.getElementById('modalGallery').style.display === 'flex') {
-            renderUserGalleryMedia();
+        // Rafraîchit la galerie si ouverte
+        if (document.getElementById('modalGallery') &&
+            document.getElementById('modalGallery').style.display === 'flex') {
+            if (typeof renderUserGalleryMedia === 'function') renderUserGalleryMedia();
         }
+
+        // Rafraîchit l’album sur la fiche ouverte SANS la fermer
+        const albumTitle = Array.from(document.querySelectorAll('h4')).find(h =>
+            (h.textContent || '').indexOf('Album du profil') !== -1
+        );
+        let albumDiv = albumTitle ? albumTitle.nextElementSibling : null;
+
+        if (!albumTitle) {
+            // Créer la section album si absente
+            const content = document.querySelector('.modal-overlay .modal-content');
+            if (content) {
+                const h4 = document.createElement('h4');
+                h4.style.cssText = 'margin-top:20px; color:#d4af37;';
+                h4.textContent = 'Album du profil';
+                const wrap = document.createElement('div');
+                wrap.style.cssText = 'display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;';
+                // Insérer avant le bouton Fermer
+                const btnFermer = content.querySelector('button');
+                if (btnFermer) {
+                    content.insertBefore(h4, btnFermer);
+                    content.insertBefore(wrap, btnFermer);
+                    albumDiv = wrap;
+                }
+            }
+        }
+
+        if (albumDiv) {
+            if (isVideo) {
+                const v = document.createElement('video');
+                v.src = media.src;
+                v.muted = true;
+                v.style.cssText = 'width:90px;height:90px;object-fit:cover;border-radius:8px;';
+                albumDiv.appendChild(v);
+            } else {
+                const img = document.createElement('img');
+                img.src = media.src;
+                img.style.cssText = 'width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #555;';
+                albumDiv.appendChild(img);
+            }
+        }
+
+        alert("✅ " + (isVideo ? "Vidéo" : "Photo") + " ajoutée à l’album et à la Galerie !");
+        input.value = '';
     };
 
     reader.readAsDataURL(file);
