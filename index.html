@@ -2987,7 +2987,8 @@ async function chargerProfilsSupabase() {
                         contrat: p.contrat || 'Ouvert aux propositions',
                         trancheRevenus: p.tranche_revenus || null,
                         budget: p.budget || null,
-                        accessoires: p.accessoires || []
+                        accessoires: p.accessoires || [],
+                        motDePasse: p.mot_de_passe || null
                     });
                 }
             });
@@ -3484,16 +3485,16 @@ const age = parseInt(document.getElementById('hAge').value) || 30;
 const ville = document.getElementById('hVille').value.trim();
 const dept = document.getElementById('hDept') ? document.getElementById('hDept').value : "53";
 
-// Construction des détails (mensurations)
+// Construction des détails (mensurations) avec libellés
 const details = [
-    document.getElementById('hCheveux')?.value,
-    document.getElementById('hLongueur')?.value,
-    document.getElementById('hYeux')?.value,
-    document.getElementById('hTaille')?.value,
-    document.getElementById('hPoids')?.value,
-    document.getElementById('hPointure')?.value,
-    document.getElementById('hPantalon')?.value,
-    document.getElementById('hTshirt')?.value
+    document.getElementById('hCheveux')?.value ? ('Cheveux: ' + document.getElementById('hCheveux').value) : '',
+    document.getElementById('hLongueur')?.value ? ('Longueur: ' + document.getElementById('hLongueur').value) : '',
+    document.getElementById('hYeux')?.value ? ('Yeux: ' + document.getElementById('hYeux').value) : '',
+    document.getElementById('hTaille')?.value ? ('Taille: ' + document.getElementById('hTaille').value + (String(document.getElementById('hTaille').value).includes('cm') ? '' : 'cm')) : '',
+    document.getElementById('hPoids')?.value ? ('Poids: ' + document.getElementById('hPoids').value + (String(document.getElementById('hPoids').value).includes('kg') ? '' : 'kg')) : '',
+    document.getElementById('hPointure')?.value ? ('Pointure: ' + document.getElementById('hPointure').value) : '',
+    document.getElementById('hPantalon')?.value ? ('Pantalon: ' + document.getElementById('hPantalon').value) : '',
+    document.getElementById('hTshirt')?.value ? ('T-shirt: ' + document.getElementById('hTshirt').value) : ''
 ].filter(Boolean).join(' | ');
 
 const photoInputH = document.getElementById('hPhoto');
@@ -3751,10 +3752,18 @@ function executerConnexion() {
         (p.email && p.email.toLowerCase() === login.toLowerCase())
     );
 
-    if (profilTrouve) {
-        vraiPseudo = profilTrouve.pseudo;
-        role = profilTrouve.role;
+    if (!profilTrouve) {
+        alert("❌ Pseudo ou email inconnu.");
+        return;
     }
+
+    if (profilTrouve.motDePasse && profilTrouve.motDePasse !== pass) {
+        alert("❌ Mot de passe incorrect.");
+        return;
+    }
+
+    vraiPseudo = profilTrouve.pseudo;
+    role = profilTrouve.role || "user";
 
     try {
         localStorage.setItem("sugar_saved_email", login);
