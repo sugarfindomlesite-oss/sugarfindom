@@ -3205,6 +3205,18 @@ function renderProfilsGrid(filteredList) {
             const s = JSON.parse(localStorage.getItem('sugar_active_session') || '{}');
             if (s && s.logged && s.pseudo) monPseudo = s.pseudo;
         } catch (e) {}
+        if (!monPseudo && typeof sessionSecoursDeconnectee !== 'undefined' && sessionSecoursDeconnectee.logged && sessionSecoursDeconnectee.pseudo) {
+            monPseudo = sessionSecoursDeconnectee.pseudo;
+        }
+        if (!monPseudo) {
+            try {
+                const w = document.getElementById('welcomeMessage');
+                if (w) {
+                    const span = w.querySelector('span');
+                    if (span) monPseudo = span.textContent.trim();
+                }
+            } catch (e) {}
+        }
         const isMoi = monPseudo && monPseudo.toLowerCase() === (p.pseudo || '').toLowerCase();
 
         card.innerHTML = `
@@ -3660,8 +3672,6 @@ function validateSoumisInscription() {
             console.error('Erreur envoi Supabase :', e);
         }
 
-        if (typeof triggerFilter === "function") triggerFilter();
-
         try {
             localStorage.setItem("sugar_saved_email", pseudo);
             localStorage.setItem("sugar_saved_pass", pass);
@@ -3674,6 +3684,7 @@ function validateSoumisInscription() {
 
         sessionSecoursDeconnectee = { pseudo: pseudo, role: "soumis", logged: true };
         majHeaderMembreConnecte(pseudo, "soumis");
+        if (typeof triggerFilter === "function") triggerFilter();
         alert("🎉 Inscription validée avec succès !\nBienvenue sur SugarFindom.");
         closeModal('modalInscription');
     };
