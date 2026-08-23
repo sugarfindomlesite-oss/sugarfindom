@@ -3534,13 +3534,8 @@ function validateSoumisInscription() {
         document.getElementById('soumisPassConf').style.border = "";
     }
 
-    // Gestion de la photo par défaut ou téléchargée
+    // Gestion de la photo par défaut (fiable au rechargement)
     let photoUrl = "https://i.imgur.com/Si8205z.jpeg";
-if (photoInput && photoInput.files && photoInput.files[0]) {
-    // Pour l’instant on garde une photo par défaut fiable
-    // (les blob locaux disparaissent au rechargement)
-    photoUrl = "https://i.imgur.com/Si8205z.jpeg";
-}
  (plus fiable pour l’instant)
     // Récupération des accessoires cochés
     const accessoiresCoches = [];
