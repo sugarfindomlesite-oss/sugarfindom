@@ -3563,19 +3563,25 @@ function validateSoumisInscription() {
     baseProfils.unshift(nouveauSoumis);
 // Enregistrement aussi dans Supabase
 try {
-    supabaseClient
-        .from('profiles')
-        .insert([{
-            pseudo: nouveauSoumis.pseudo,
-            role: 'soumis',
-            email: nouveauSoumis.email || null,
-            age: nouveauSoumis.age || null,
-            dept: nouveauSoumis.dept || null,
-            ville: nouveauSoumis.ville || null,
-            details: nouveauSoumis.details || null,
-            photo: nouveauSoumis.photo || null,
-            en_ligne: true
-        }])
+supabaseClient
+    .from('profiles')
+    .insert([{
+        pseudo: nouveauSoumis.pseudo,
+        role: 'soumis',
+        email: nouveauSoumis.email || null,
+        age: nouveauSoumis.age || null,
+        dept: nouveauSoumis.dept || null,
+        ville: nouveauSoumis.ville || null,
+        details: nouveauSoumis.details || null,
+        photo: nouveauSoumis.photo || null,
+        en_ligne: true,
+        marital: nouveauSoumis.marital || null,
+        exp: nouveauSoumis.exp || null,
+        tranche_revenus: nouveauSoumis.trancheRevenus || null,
+        budget: nouveauSoumis.budget || null,
+        contrat: nouveauSoumis.contrat || null,
+        accessoires: nouveauSoumis.accessoires || []
+    }])
         .then(({ data, error }) => {
             if (error) {
                 console.error('Erreur Supabase (soumis) :', error);
