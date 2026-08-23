@@ -3201,7 +3201,7 @@ function renderProfilsGrid(filteredList) {
             <div style="font-size:11px; color:#fff; margin-bottom:5px;">📍 ${p.ville} (${p.dept})</div>
             <div class="profile-details">${detailsHtml}</div>
             ${isMoi ? '' : `<button class="btn-discuter" onclick="event.stopPropagation(); openMessagingWith('${p.pseudo}')">💬 Discuter</button>`}
-        `;        `;
+        `;
 
         // Blocage très strict
         card.addEventListener('click', function(e) {
