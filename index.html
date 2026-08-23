@@ -3118,6 +3118,25 @@ if (monPseudoActuel && monPseudoActuel.toLowerCase() === p.pseudo.toLowerCase())
         </div>
     `;
 }
+    // Album perso (photos envoyées par ce profil)
+    try {
+        const medias = (typeof userGalleryMedia !== 'undefined' && Array.isArray(userGalleryMedia))
+            ? userGalleryMedia.filter(m => m.addedBy && m.addedBy.toLowerCase() === p.pseudo.toLowerCase())
+            : [];
+        if (medias.length > 0) {
+            html += `<h4 style="margin-top:20px; color:#d4af37;">Album du profil</h4>
+                     <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;">`;
+            medias.forEach(m => {
+                if (m.type === 'video') {
+                    html += `<video src="${m.src}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;" muted></video>`;
+                } else {
+                    html += `<img src="${m.src}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #555;">`;
+                }
+            });
+            html += `</div>`;
+        }
+    } catch (e) {}
+
 
     // Bouton Discuter uniquement si ce n'est PAS mon propre profil
     if (!monPseudoActuel || monPseudoActuel.toLowerCase() !== p.pseudo.toLowerCase()) {
@@ -3443,74 +3462,94 @@ const details = [
     document.getElementById('hTshirt')?.value
 ].filter(Boolean).join(' | ');
 
-const photoUrl = "https://i.imgur.com/ZyjTgD7.jpeg"; // photo par défaut hétéro
+const photoInputH = document.getElementById('hPhoto');
 
-// 1. Création de l'objet profil
-const nouveauHetero = {
-    id: Date.now(),
-    pseudo: pseudo,
-    email: email,
-    age: age,
-    role: "hetero",
-    dept: dept,
-    ville: ville,
-    marital: (document.getElementById('hMarital') && document.getElementById('hMarital').value) || "Célibataire",
-    exp: (document.getElementById('qNiveau') && document.getElementById('qNiveau').value) || "Débutant",
-    details: details || "Hétéro Alpha",
-    contrat: "Ouvert aux propositions",
-    photo: photoUrl,
-    en_ligne: true
+const finirInscriptionHetero = function(photoFinale) {
+    const nouveauHetero = {
+        id: Date.now(),
+        pseudo: pseudo,
+        email: email,
+        age: age,
+        role: "hetero",
+        dept: dept,
+        ville: ville,
+        marital: (document.getElementById('hMarital') && document.getElementById('hMarital').value) || "Célibataire",
+        exp: (document.getElementById('qNiveau') && document.getElementById('qNiveau').value) || "Débutant",
+        details: details || "Hétéro Alpha",
+        contrat: "Ouvert aux propositions",
+        photo: photoFinale,
+        en_ligne: true
+    };
+
+    baseProfils.unshift(nouveauHetero);
+
+    // Album perso + galerie
+    if (photoFinale && photoFinale.indexOf('data:') === 0) {
+        userGalleryMedia.unshift({
+            type: 'image',
+            src: photoFinale,
+            addedBy: pseudo,
+            date: new Date().toISOString()
+        });
+        if (typeof saveGalleryMedia === 'function') saveGalleryMedia();
+    }
+
+    try {
+        supabaseClient
+            .from('profiles')
+            .insert([{
+                pseudo: nouveauHetero.pseudo,
+                role: 'hetero',
+                email: nouveauHetero.email || null,
+                age: nouveauHetero.age || null,
+                dept: nouveauHetero.dept || null,
+                ville: nouveauHetero.ville || null,
+                details: nouveauHetero.details || null,
+                photo: nouveauHetero.photo || null,
+                en_ligne: true,
+                marital: nouveauHetero.marital || null,
+                exp: nouveauHetero.exp || null,
+                contrat: nouveauHetero.contrat || null
+            }])
+            .then(({ error }) => {
+                if (error) {
+                    console.error('Erreur Supabase (hétéro) :', error);
+                    alert("Profil créé en local, mais erreur Supabase : " + error.message);
+                } else {
+                    console.log('Profil hétéro enregistré dans Supabase');
+                }
+            });
+    } catch (e) {
+        console.error('Erreur envoi Supabase hétéro :', e);
+    }
+
+    try {
+        localStorage.setItem("sugar_saved_email", email);
+        localStorage.setItem("sugar_saved_pass", pass);
+        localStorage.setItem("sugar_active_session", JSON.stringify({
+            pseudo: pseudo,
+            role: "hetero",
+            logged: true
+        }));
+    } catch (e) {}
+
+    sessionSecoursDeconnectee = { pseudo: pseudo, role: "hetero", logged: true };
+    majHeaderMembreConnecte(pseudo, "hetero");
+    if (typeof triggerFilter === "function") triggerFilter();
+
+    alert("🎉 Inscription hétéro validée !\nBienvenue sur SugarFindom.");
+    closeModal('modalQuestionnaire');
 };
 
-// 2. Ajout dans la liste locale (pour qu'il s'affiche tout de suite)
-baseProfils.unshift(nouveauHetero);
-
-// 3. Enregistrement dans Supabase
-try {
-    supabaseClient
-        .from('profiles')
-        .insert([{
-            pseudo: nouveauHetero.pseudo,
-            role: 'hetero',
-            email: nouveauHetero.email || null,
-            age: nouveauHetero.age || null,
-            dept: nouveauHetero.dept || null,
-            ville: nouveauHetero.ville || null,
-            details: nouveauHetero.details || null,
-            photo: nouveauHetero.photo || null,
-            en_ligne: true
-        }])
-        .then(({ data, error }) => {
-            if (error) {
-                console.error('Erreur Supabase (hétéro) :', error);
-                alert("Profil créé en local, mais erreur Supabase : " + error.message);
-            } else {
-                console.log('Profil hétéro enregistré dans Supabase');
-            }
-        });
-} catch (e) {
-    console.error('Erreur envoi Supabase hétéro :', e);
+if (photoInputH && photoInputH.files && photoInputH.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        finirInscriptionHetero(e.target.result);
+    };
+    reader.readAsDataURL(photoInputH.files[0]);
+} else {
+    finirInscriptionHetero("https://i.imgur.com/ZyjTgD7.jpeg");
 }
-
-// 4. Connexion automatique
-try {
-    localStorage.setItem("sugar_saved_email", email);
-    localStorage.setItem("sugar_saved_pass", pass);
-    localStorage.setItem("sugar_active_session", JSON.stringify({
-        pseudo: pseudo,
-        role: "hetero",
-        logged: true
-    }));
-} catch (e) {}
-
-sessionSecoursDeconnectee = { pseudo: pseudo, role: "hetero", logged: true };
-
-// 5. Mise à jour interface
-majHeaderMembreConnecte(pseudo, "hetero");
-if (typeof triggerFilter === "function") triggerFilter();
-
-alert("🎉 Inscription hétéro validée !\nBienvenue sur SugarFindom.");
-closeModal('modalQuestionnaire');
 }
 
 function validateSoumisInscription() {
@@ -3543,91 +3582,99 @@ function validateSoumisInscription() {
         document.getElementById('soumisPassConf').style.border = "";
     }
 
-    // Gestion de la photo par défaut (fiable au rechargement)
-    let photoUrl = "https://i.imgur.com/Si8205z.jpeg";
-    // Récupération des accessoires cochés
     const accessoiresCoches = [];
     document.querySelectorAll('input[name="accessoire"]:checked').forEach(cb => {
         accessoiresCoches.push(cb.value);
     });
 
-    // Injection du budget et création du profil soumis
-    const nouveauSoumis = {
-        pseudo: pseudo,
-        email: email,
-        age: parseInt(age),
-        role: "soumis",
-        dept: dept,
-        ville: ville,
-        marital: marital,
-        exp: experience,
-        trancheRevenus: revenus,
-        budget: parseInt(budget),
-        details: `Fréquence: ${frequence} | Expérience: ${experience} | Revenus: ${revenus}`,
-        contrat: "En recherche active de maître",
-        enLigne: true,
-        photo: photoUrl,
-        accessoires: accessoiresCoches
+    const finirInscriptionSoumis = function(photoFinale) {
+        const nouveauSoumis = {
+            pseudo: pseudo,
+            email: email,
+            age: parseInt(age),
+            role: "soumis",
+            dept: dept,
+            ville: ville,
+            marital: marital,
+            exp: experience,
+            trancheRevenus: revenus,
+            budget: parseInt(budget),
+            details: `Fréquence: ${frequence} | Expérience: ${experience} | Revenus: ${revenus}`,
+            contrat: "En recherche active de maître",
+            enLigne: true,
+            photo: photoFinale,
+            accessoires: accessoiresCoches
+        };
+
+        baseProfils.unshift(nouveauSoumis);
+
+        // Album perso + galerie si photo perso
+        if (photoFinale && photoFinale.indexOf('data:') === 0) {
+            userGalleryMedia.unshift({
+                type: 'image',
+                src: photoFinale,
+                addedBy: pseudo,
+                date: new Date().toISOString()
+            });
+            if (typeof saveGalleryMedia === 'function') saveGalleryMedia();
+        }
+
+        try {
+            supabaseClient
+                .from('profiles')
+                .insert([{
+                    pseudo: nouveauSoumis.pseudo,
+                    role: 'soumis',
+                    email: nouveauSoumis.email || null,
+                    age: nouveauSoumis.age || null,
+                    dept: nouveauSoumis.dept || null,
+                    ville: nouveauSoumis.ville || null,
+                    details: nouveauSoumis.details || null,
+                    photo: nouveauSoumis.photo || null,
+                    en_ligne: true,
+                    marital: nouveauSoumis.marital || null,
+                    exp: nouveauSoumis.exp || null,
+                    tranche_revenus: nouveauSoumis.trancheRevenus || null,
+                    budget: nouveauSoumis.budget || null,
+                    contrat: nouveauSoumis.contrat || null,
+                    accessoires: nouveauSoumis.accessoires || []
+                }])
+                .then(({ error }) => {
+                    if (error) console.error('Erreur Supabase (soumis) :', error);
+                    else console.log('Profil soumis enregistré dans Supabase');
+                });
+        } catch (e) {
+            console.error('Erreur envoi Supabase :', e);
+        }
+
+        if (typeof triggerFilter === "function") triggerFilter();
+
+        try {
+            localStorage.setItem("sugar_saved_email", email);
+            localStorage.setItem("sugar_saved_pass", pass);
+            localStorage.setItem("sugar_active_session", JSON.stringify({
+                pseudo: pseudo,
+                role: "soumis",
+                logged: true
+            }));
+        } catch (e) {}
+
+        sessionSecoursDeconnectee = { pseudo: pseudo, role: "soumis", logged: true };
+        majHeaderMembreConnecte(pseudo, "soumis");
+        alert("🎉 Inscription validée avec succès !\nBienvenue sur SugarFindom.");
+        closeModal('modalInscription');
     };
 
-    // Ajout à la base locale
-    baseProfils.unshift(nouveauSoumis);
-// Enregistrement aussi dans Supabase
-try {
-supabaseClient
-    .from('profiles')
-    .insert([{
-        pseudo: nouveauSoumis.pseudo,
-        role: 'soumis',
-        email: nouveauSoumis.email || null,
-        age: nouveauSoumis.age || null,
-        dept: nouveauSoumis.dept || null,
-        ville: nouveauSoumis.ville || null,
-        details: nouveauSoumis.details || null,
-        photo: nouveauSoumis.photo || null,
-        en_ligne: true,
-        marital: nouveauSoumis.marital || null,
-        exp: nouveauSoumis.exp || null,
-        tranche_revenus: nouveauSoumis.trancheRevenus || null,
-        budget: nouveauSoumis.budget || null,
-        contrat: nouveauSoumis.contrat || null,
-        accessoires: nouveauSoumis.accessoires || []
-    }])
-        .then(({ data, error }) => {
-            if (error) {
-                console.error('Erreur Supabase (soumis) :', error);
-            } else {
-                console.log('Profil soumis enregistré dans Supabase');
-            }
-        });
-} catch (e) {
-    console.error('Erreur envoi Supabase :', e);
+    if (photoInput && photoInput.files && photoInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            finirInscriptionSoumis(e.target.result);
+        };
+        reader.readAsDataURL(photoInput.files[0]);
+    } else {
+        finirInscriptionSoumis("https://i.imgur.com/Si8205z.jpeg");
+    }
 }
-    if (typeof triggerFilter === "function") triggerFilter();
-
-    // === CONNEXION AUTOMATIQUE ===
-    try {
-        localStorage.setItem("sugar_saved_email", email);
-        localStorage.setItem("sugar_saved_pass", pass);
-        localStorage.setItem("sugar_active_session", JSON.stringify({
-            pseudo: pseudo,
-            role: "soumis",
-            logged: true
-        }));
-    } catch (e) {}
-
-    sessionSecoursDeconnectee = { pseudo: pseudo, role: "soumis", logged: true };
-
-    // Mise à jour de l'interface
-    majHeaderMembreConnecte(pseudo, "soumis");
-
-    // Message de fin
-    alert(`🎉 Inscription validée avec succès !\nBienvenue sur SugarFindom.\nUn mail automatique vient d'être envoyé à l'adresse : ${email}.`);
-
-    // Fermeture de la modal
-    closeModal('modalInscription');
-}
-
 
 // ===================== MISE À JOUR HEADER CONNECTÉ =====================
 function majHeaderMembreConnecte(pseudo, role = "hetero") {
