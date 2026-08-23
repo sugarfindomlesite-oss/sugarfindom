@@ -1115,6 +1115,14 @@ function retirerAccueil() {
             <input type="password" id="soumisPassConf" placeholder="Confirmer le mot de passe *" style="width:100%; padding:10px; margin:5px 0; background:#333; color:white; border:1px solid #555; border-radius:4px; box-sizing: border-box;">
 
             <input type="number" id="soumisAge" placeholder="Âge (18 ans minimum) *" min="18" max="99" style="width:100%; padding:10px; margin:5px 0; background:#333; color:white; border:1px solid #555; border-radius:4px; box-sizing: border-box;">
+                        <select id="soumisMarital" style="width:100%; padding:10px; margin:5px 0; background:#333; color:white; border:1px solid #555; border-radius:4px; box-sizing: border-box;">
+                <option value="">Statut marital *</option>
+                <option value="Célibataire">Célibataire</option>
+                <option value="En couple">En couple</option>
+                <option value="Marié">Marié</option>
+                <option value="Divorcé">Divorcé</option>
+                <option value="Veuf">Veuf</option>
+            </select>
 
             <select id="soumisDept" style="width:100%; padding:10px; margin:5px 0; background:#333; color:white; border:1px solid #555; border-radius:4px; box-sizing: border-box;">
                 <option value="">Sélectionnez votre département *</option>
@@ -3446,8 +3454,8 @@ const nouveauHetero = {
     role: "hetero",
     dept: dept,
     ville: ville,
-    marital: "Célibataire",
-    exp: "Débutant",
+    marital: (document.getElementById('hMarital') && document.getElementById('hMarital').value) || "Célibataire",
+    exp: (document.getElementById('qNiveau') && document.getElementById('qNiveau').value) || "Débutant",
     details: details || "Hétéro Alpha",
     contrat: "Ouvert aux propositions",
     photo: photoUrl,
@@ -3511,6 +3519,7 @@ function validateSoumisInscription() {
     const pass = document.getElementById('soumisPass').value;
     const passConf = document.getElementById('soumisPassConf').value;
     const age = document.getElementById('soumisAge').value.trim();
+    const marital = document.getElementById('soumisMarital').value;
     const dept = document.getElementById('soumisDept').value;
     const ville = document.getElementById('soumisVille').value.trim();
     const frequence = document.getElementById('soumisFrequence').value;
@@ -3520,7 +3529,7 @@ function validateSoumisInscription() {
     const photoInput = document.getElementById('soumisPhoto');
 
     // 1. Vérification du remplissage global des champs requis
-    if (!pseudo || !email || !pass || !passConf || !age || !dept || !ville || !frequence || !experience || !revenus || !budget) {
+    if (!pseudo || !email || !pass || !passConf || !age || !dept || !ville || !frequence || !experience || !revenus || !budget || !marital) {
         alert("❌ Tous les champs obligatoires (*) doivent être remplis.");
         return;
     }
@@ -3550,15 +3559,15 @@ function validateSoumisInscription() {
         role: "soumis",
         dept: dept,
         ville: ville,
-        marital: "Célibataire", 
+        marital: marital,
         exp: experience,
         trancheRevenus: revenus,
-        budget: parseInt(budget), 
+        budget: parseInt(budget),
         details: `Fréquence: ${frequence} | Expérience: ${experience} | Revenus: ${revenus}`,
         contrat: "En recherche active de maître",
         enLigne: true,
         photo: photoUrl,
-        accessoires: accessoiresCoches          // ← ligne ajoutée
+        accessoires: accessoiresCoches
     };
 
     // Ajout à la base locale
