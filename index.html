@@ -2942,28 +2942,28 @@ async function chargerProfilsSupabase() {
         }
 
         if (data && data.length > 0) {
-            // On ajoute les profils Supabase en haut de la liste
             data.forEach(p => {
-                // Évite les doublons de pseudo
                 if (!baseProfils.some(bp => bp.pseudo === p.pseudo)) {
                     baseProfils.unshift({
                         id: p.id || Date.now(),
                         pseudo: p.pseudo,
-                        role: p.role || 'hetero',
+                        role: p.role || 'soumis',
                         age: p.age || null,
                         dept: p.dept || '',
                         ville: p.ville || '',
                         details: p.details || '',
-                        photo: p.photo || 'https://i.imgur.com/ZyjTgD7.jpeg',
-                        en_ligne: p.en_ligne !== false,
-                        marital: 'Célibataire',
-                        exp: 'Débutant',
-                        contrat: 'Ouvert aux propositions'
+                        photo: p.photo || 'https://i.imgur.com/Si8205z.jpeg',
+                        enLigne: p.en_ligne !== false,
+                        marital: p.marital || 'Célibataire',
+                        exp: p.exp || 'Débutant',
+                        contrat: p.contrat || 'Ouvert aux propositions',
+                        trancheRevenus: p.tranche_revenus || null,
+                        budget: p.budget || null,
+                        accessoires: p.accessoires || []
                     });
                 }
             });
 
-            // Rafraîchit l'affichage
             if (typeof triggerFilter === 'function') {
                 triggerFilter();
             }
@@ -3111,13 +3111,15 @@ if (monPseudoActuel && monPseudoActuel.toLowerCase() === p.pseudo.toLowerCase())
     `;
 }
 
-    // Bouton Discuter → ouvre directement la messagerie
-    html += `
-        <button onclick="openMessagingWith('${p.pseudo}'); this.parentElement.parentElement.remove()" 
-                style="width:100%; margin:15px 0 10px 0; background:#00cc44; color:black; padding:14px; border:none; border-radius:6px; font-weight:bold;">
-            💬 Discuter avec ${p.pseudo}
-        </button>
-    `;
+    // Bouton Discuter uniquement si ce n'est PAS mon propre profil
+    if (!monPseudoActuel || monPseudoActuel.toLowerCase() !== p.pseudo.toLowerCase()) {
+        html += `
+            <button onclick="openMessagingWith('${p.pseudo}'); this.parentElement.parentElement.remove()"
+                    style="width:100%; margin:15px 0 10px 0; background:#00cc44; color:black; padding:14px; border:none; border-radius:6px; font-weight:bold;">
+                💬 Discuter avec ${p.pseudo}
+            </button>
+        `;
+    }
 
     // Création de la fiche
     let modal = document.createElement('div');
@@ -3533,7 +3535,13 @@ function validateSoumisInscription() {
     }
 
     // Gestion de la photo par défaut ou téléchargée
-    let photoUrl = "https://i.imgur.com/Si8205z.jpeg"; // photo par défaut (plus fiable pour l’instant)
+    let photoUrl = "https://i.imgur.com/Si8205z.jpeg";
+if (photoInput && photoInput.files && photoInput.files[0]) {
+    // Pour l’instant on garde une photo par défaut fiable
+    // (les blob locaux disparaissent au rechargement)
+    photoUrl = "https://i.imgur.com/Si8205z.jpeg";
+}
+ (plus fiable pour l’instant)
     // Récupération des accessoires cochés
     const accessoiresCoches = [];
     document.querySelectorAll('input[name="accessoire"]:checked').forEach(cb => {
