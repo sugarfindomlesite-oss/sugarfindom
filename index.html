@@ -395,6 +395,10 @@ html, body {
   const SUPABASE_URL = "https://amkniuxsdfegltqionti.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFta25pdXhzZGZlZ2x0cWlvbnRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwOTUwNDEsImV4cCI6MjEwMjY3MTA0MX0.zcC1m7e7qDFt3-HydErqGbuevzA6uZs4MrCTv2W5hQQ";
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  window.currentUserPseudo = '';
+  window.currentUserRole = '';
+
 </script>
 
 </head>
@@ -641,15 +645,15 @@ document.addEventListener("DOMContentLoaded", function() {
     try {
         const session = JSON.parse(localStorage.getItem("sugar_active_session") || "{}");
         if (session && session.logged && session.pseudo) {
+            window.currentUserPseudo = session.pseudo;
+            window.currentUserRole = session.role || "hetero";
+            sessionSecoursDeconnectee = {
+                pseudo: session.pseudo,
+                role: session.role || "hetero",
+                logged: true
+            };
             if (typeof majHeaderMembreConnecte === "function") {
                 majHeaderMembreConnecte(session.pseudo, session.role || "hetero");
-            }
-            if (typeof sessionSecoursDeconnectee !== "undefined") {
-                sessionSecoursDeconnectee = {
-                    pseudo: session.pseudo,
-                    role: session.role || "hetero",
-                    logged: true
-                };
             }
         }
     } catch (e) {}
@@ -3200,24 +3204,17 @@ function renderProfilsGrid(filteredList) {
             <span style="color: #ff3333; font-size:11px;">${p.contrat}</span>
         `;
 
-        let monPseudo = '';
-        try {
-            const s = JSON.parse(localStorage.getItem('sugar_active_session') || '{}');
-            if (s && s.logged && s.pseudo) monPseudo = s.pseudo;
-        } catch (e) {}
-        if (!monPseudo && typeof sessionSecoursDeconnectee !== 'undefined' && sessionSecoursDeconnectee.logged && sessionSecoursDeconnectee.pseudo) {
-            monPseudo = sessionSecoursDeconnectee.pseudo;
-        }
+        let monPseudo = (window.currentUserPseudo || '').trim();
         if (!monPseudo) {
             try {
-                const w = document.getElementById('welcomeMessage');
-                if (w) {
-                    const span = w.querySelector('span');
-                    if (span) monPseudo = span.textContent.trim();
-                }
+                const s = JSON.parse(localStorage.getItem('sugar_active_session') || '{}');
+                if (s && s.logged && s.pseudo) monPseudo = String(s.pseudo).trim();
             } catch (e) {}
         }
-        const isMoi = monPseudo && monPseudo.toLowerCase() === (p.pseudo || '').toLowerCase();
+        if (!monPseudo && typeof sessionSecoursDeconnectee !== 'undefined' && sessionSecoursDeconnectee && sessionSecoursDeconnectee.pseudo) {
+            monPseudo = String(sessionSecoursDeconnectee.pseudo).trim();
+        }
+        const isMoi = !!(monPseudo && p.pseudo && monPseudo.toLowerCase() === String(p.pseudo).trim().toLowerCase());
 
         card.innerHTML = `
             <div class="profile-img-container">
@@ -3562,8 +3559,9 @@ const finirInscriptionHetero = function(photoFinale) {
     } catch (e) {}
 
     sessionSecoursDeconnectee = { pseudo: pseudo, role: "hetero", logged: true };
-    majHeaderMembreConnecte(pseudo, "hetero");
-    if (typeof triggerFilter === "function") triggerFilter();
+    window.currentUserPseudo = pseudo;
+    window.currentUserRole = "hetero";
+    majHeaderMembreConnecte(pseudo, "hetero");    if (typeof triggerFilter === "function") triggerFilter();
 
     alert("🎉 Inscription hétéro validée !\nBienvenue sur SugarFindom.");
     closeModal('modalQuestionnaire');
@@ -3683,8 +3681,9 @@ function validateSoumisInscription() {
         } catch (e) {}
 
         sessionSecoursDeconnectee = { pseudo: pseudo, role: "soumis", logged: true };
-        majHeaderMembreConnecte(pseudo, "soumis");
-        if (typeof triggerFilter === "function") triggerFilter();
+        window.currentUserPseudo = pseudo;
+        window.currentUserRole = "soumis";
+        majHeaderMembreConnecte(pseudo, "soumis");        if (typeof triggerFilter === "function") triggerFilter();
         alert("🎉 Inscription validée avec succès !\nBienvenue sur SugarFindom.");
         closeModal('modalInscription');
     };
@@ -3702,8 +3701,9 @@ function validateSoumisInscription() {
 
 // ===================== MISE À JOUR HEADER CONNECTÉ =====================
 function majHeaderMembreConnecte(pseudo, role = "hetero") {
-    const header = document.getElementById('userHeaderStatus');
-    const welcome = document.getElementById('welcomeMessage');
+    window.currentUserPseudo = pseudo || '';
+    window.currentUserRole = role || '';
+    const header = document.getElementById('userHeaderStatus');    const welcome = document.getElementById('welcomeMessage');
     const guestActions = document.getElementById('guestActions');
     const loggedActions = document.getElementById('loggedActions');
    
@@ -3767,9 +3767,10 @@ function executerConnexion() {
     } catch (e) {}
 
     sessionSecoursDeconnectee = { pseudo: vraiPseudo, role: role, logged: true };
+    window.currentUserPseudo = vraiPseudo;
+    window.currentUserRole = role;
 
-    majHeaderMembreConnecte(vraiPseudo, role);
-    closeModal('modalAuth');
+    majHeaderMembreConnecte(vraiPseudo, role);    closeModal('modalAuth');
     closeModal('modalConnexion');
 
     alert(`✅ Connexion réussie. Bienvenue ${vraiPseudo} !`);
