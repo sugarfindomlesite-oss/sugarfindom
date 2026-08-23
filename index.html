@@ -3134,25 +3134,7 @@ if (monPseudoActuel && monPseudoActuel.toLowerCase() === p.pseudo.toLowerCase())
         </div>
     `;
 }
-    // Album perso (photos envoyées par ce profil)
-    try {
-        const medias = (typeof userGalleryMedia !== 'undefined' && Array.isArray(userGalleryMedia))
-            ? userGalleryMedia.filter(m => m.addedBy && m.addedBy.toLowerCase() === p.pseudo.toLowerCase())
-            : [];
-        if (medias.length > 0) {
-            html += `<h4 style="margin-top:20px; color:#d4af37;">Album du profil</h4>
-                     <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;">`;
-            medias.forEach(m => {
-                if (m.type === 'video') {
-                    html += `<video src="${m.src}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;" muted></video>`;
-                } else {
-                    html += `<img src="${m.src}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #555;">`;
-                }
-            });
-            html += `</div>`;
-        }
-    } catch (e) {}
-
+const medias = (typeof userGalleryMedia !== 'undefined' && Array.isArray(userGalleryMedia))
 
     // Bouton Discuter uniquement si ce n'est PAS mon propre profil
     if (!monPseudoActuel || monPseudoActuel.toLowerCase() !== p.pseudo.toLowerCase()) {
@@ -3203,6 +3185,13 @@ function renderProfilsGrid(filteredList) {
             <span style="color: #ff3333; font-size:11px;">${p.contrat}</span>
         `;
 
+        let monPseudo = '';
+        try {
+            const s = JSON.parse(localStorage.getItem('sugar_active_session') || '{}');
+            if (s && s.logged && s.pseudo) monPseudo = s.pseudo;
+        } catch (e) {}
+        const isMoi = monPseudo && monPseudo.toLowerCase() === (p.pseudo || '').toLowerCase();
+
         card.innerHTML = `
             <div class="profile-img-container">
                 <img src="${p.photo}" alt="Photo">
@@ -3211,11 +3200,8 @@ function renderProfilsGrid(filteredList) {
             <div class="profile-name-age">${p.pseudo}, ${p.age} ans</div>
             <div style="font-size:11px; color:#fff; margin-bottom:5px;">📍 ${p.ville} (${p.dept})</div>
             <div class="profile-details">${detailsHtml}</div>
-           
-            <button class="btn-discuter" onclick="event.stopPropagation(); openMessagingWith('${p.pseudo}')">
-    💬 Discuter
-</button>
-        `;
+            ${isMoi ? '' : `<button class="btn-discuter" onclick="event.stopPropagation(); openMessagingWith('${p.pseudo}')">💬 Discuter</button>`}
+        `;        `;
 
         // Blocage très strict
         card.addEventListener('click', function(e) {
@@ -4867,36 +4853,35 @@ function uploadMediaFromProfile(pseudo) {
         };
 
         userGalleryMedia.unshift(media);
-        saveGalleryMedia();
+        if (typeof saveGalleryMedia === 'function') saveGalleryMedia();
 
-        // Rafraîchit la galerie si ouverte
         if (document.getElementById('modalGallery') &&
-            document.getElementById('modalGallery').style.display === 'flex') {
-            if (typeof renderUserGalleryMedia === 'function') renderUserGalleryMedia();
+            document.getElementById('modalGallery').style.display === 'flex' &&
+            typeof renderUserGalleryMedia === 'function') {
+            renderUserGalleryMedia();
         }
 
-        // Rafraîchit l’album sur la fiche ouverte SANS la fermer
-        const albumTitle = Array.from(document.querySelectorAll('h4')).find(h =>
-            (h.textContent || '').indexOf('Album du profil') !== -1
-        );
-        let albumDiv = albumTitle ? albumTitle.nextElementSibling : null;
+        // FORCE : trouver ou créer le conteneur album de CE profil
+        let albumDiv = document.getElementById('album-wrap-' + pseudo);
 
-        if (!albumTitle) {
-            // Créer la section album si absente
-            const content = document.querySelector('.modal-overlay .modal-content');
+        if (!albumDiv) {
+            const content = document.querySelector('.modal-overlay[style*="flex"] .modal-content')
+                || document.querySelector('.modal-overlay .modal-content');
             if (content) {
-                const h4 = document.createElement('h4');
-                h4.style.cssText = 'margin-top:20px; color:#d4af37;';
-                h4.textContent = 'Album du profil';
-                const wrap = document.createElement('div');
-                wrap.style.cssText = 'display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;';
-                // Insérer avant le bouton Fermer
-                const btnFermer = content.querySelector('button');
-                if (btnFermer) {
-                    content.insertBefore(h4, btnFermer);
-                    content.insertBefore(wrap, btnFermer);
-                    albumDiv = wrap;
+                let h4 = Array.from(content.querySelectorAll('h4')).find(h =>
+                    (h.textContent || '').indexOf('Album du profil') !== -1
+                );
+                if (!h4) {
+                    h4 = document.createElement('h4');
+                    h4.style.cssText = 'margin-top:20px; color:#d4af37;';
+                    h4.textContent = 'Album du profil';
+                    content.appendChild(h4);
                 }
+                albumDiv = document.createElement('div');
+                albumDiv.id = 'album-wrap-' + pseudo;
+                albumDiv.className = 'album-profil-wrap';
+                albumDiv.style.cssText = 'display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; min-height:10px;';
+                h4.insertAdjacentElement('afterend', albumDiv);
             }
         }
 
@@ -4910,12 +4895,13 @@ function uploadMediaFromProfile(pseudo) {
             } else {
                 const img = document.createElement('img');
                 img.src = media.src;
-                img.style.cssText = 'width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #555;';
+                img.style.cssText = 'width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #555;cursor:pointer;';
+                img.onclick = function() { openMedia('image', media.src); };
                 albumDiv.appendChild(img);
             }
         }
 
-        alert("✅ " + (isVideo ? "Vidéo" : "Photo") + " ajoutée à l’album et à la Galerie !");
+        alert("✅ " + (isVideo ? "Vidéo" : "Photo") + " ajoutée !");
         input.value = '';
     };
 
