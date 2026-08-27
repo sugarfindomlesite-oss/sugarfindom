@@ -618,6 +618,27 @@ html, body {
     </div>
 </div>
 
+<div id="popup-pieds-hetero" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.96); z-index:1000006; align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#1e1e1e; padding:28px; border-radius:18px; max-width:640px; width:100%; border:3px solid #2563eb; text-align:center;">
+        <img src="https://i.imgur.com/eOEjo1H.jpeg"
+             alt="Pieds"
+             style="width:100%; max-height:320px; object-fit:contain; border-radius:12px; margin-bottom:18px; display:block;">
+        <p style="font-size:22px; color:#fff; line-height:1.5; margin:0 0 14px 0; font-weight:700;">
+            T’es hétéro et t'as besoin d’argent ?
+        </p>
+        <p style="font-size:20px; color:#d4af37; line-height:1.5; margin:0 0 18px 0; font-weight:700;">
+            Fais de l’argent avec tes pieds.
+        </p>
+        <p style="font-size:18px; color:#e0f0ff; line-height:1.6; margin:0 0 28px 0;">
+            Choisis un soumis, amuse-toi à le dépouiller, ruine-le, et laisse-le à genoux et endetté.
+        </p>
+        <button onclick="fermerPopupPiedsEtOuvrirForm()"
+                style="width:100%; background:#2563eb; color:#fff; padding:16px; font-size:18px; font-weight:bold; border:none; border-radius:50px; cursor:pointer;">
+            Continuer mon inscription hétéro
+        </button>
+    </div>
+</div>
+
 <script>
     // Écouteur pour l'ouverture du pop-up
 document.addEventListener("DOMContentLoaded", function() {
@@ -946,7 +967,7 @@ function retirerAccueil() {
         <h2 style="text-align:center; margin-bottom:25px;">Inscription</h2>
 
         <div style="text-align:center; margin:30px 0;">
-            <button onclick="selectRole('hetero')" style="padding:16px 32px; background:#d4af37; color:black; border:none; border-radius:8px; font-weight:bold; margin:0 12px; font-size:16px;">Tu es HÉTÉRO ALPHA</button>
+            <button onclick="ouvrirPopupPiedsPuisFormHetero()" style="padding:16px 32px; background:#d4af37; color:black; border:none; border-radius:8px; font-weight:bold; margin:0 12px; font-size:16px;">Tu es HÉTÉRO ALPHA</button>
             <button onclick="selectRole('soumis')" style="padding:16px 32px; background:#333; color:white; border:1px solid #666; border-radius:8px; font-weight:bold; margin:0 12px; font-size:16px;">Tu es SOUMIS FINANCIER</button>
         </div>
 
@@ -3027,6 +3048,30 @@ function selectRole(role) {
         if (formHetero) formHetero.style.display = 'none';
         if (formSoumis) formSoumis.style.display = 'block';
     }
+}
+
+function selectRole(role) {
+    const formHetero = document.getElementById('formHetero');
+    const formSoumis = document.getElementById('formSoumisFinancier');
+    
+    if (role === 'hetero') {
+        if (formHetero) formHetero.style.display = 'block';
+        if (formSoumis) formSoumis.style.display = 'none';
+    } else if (role === 'soumis') {
+        if (formHetero) formHetero.style.display = 'none';
+        if (formSoumis) formSoumis.style.display = 'block';
+    }
+}
+
+function ouvrirPopupPiedsPuisFormHetero() {
+    const pop = document.getElementById('popup-pieds-hetero');
+    if (pop) pop.style.display = 'flex';
+}
+
+function fermerPopupPiedsEtOuvrirForm() {
+    const pop = document.getElementById('popup-pieds-hetero');
+    if (pop) pop.style.display = 'none';
+    if (typeof selectRole === 'function') selectRole('hetero');
 }
 
 function triggerFilter() {
