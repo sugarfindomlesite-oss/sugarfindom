@@ -3945,17 +3945,30 @@ function demarrerMessagesTempsReel() {
     }
 
     if (!window._sugarMsgPoll) {
+        window._sugarMsgCount = window._sugarMsgCount || 0;
         window._sugarMsgPoll = setInterval(function() {
             const moi = getMonPseudo();
             if (!moi) return;
-            const avant = JSON.stringify(Object.keys(conversations));
             chargerMesConversations().then(function() {
+                let total = 0;
+                Object.keys(conversations).forEach(function(k) {
+                    total += (conversations[k] || []).length;
+                });
+                if (total === window._sugarMsgCount) return;
+                const nouveaux = total > window._sugarMsgCount;
+                window._sugarMsgCount = total;
                 loadChatList();
-                if (currentChatUser) loadChatHistory(currentChatUser);
+                if (nouveaux) {
+                    const box = document.getElementById('modalMessages');
+                    if (box && box.style.display === 'flex' && currentChatUser) {
+                        loadChatHistory(currentChatUser);
+                    } else {
+                        notifyNewMessage();
+                    }
+                }
             });
-        }, 4000);
+        }, 8000);
     }
-}
 
 function appliquerNouveauMessage(msg) {
     const moi = getMonPseudo();
@@ -4279,8 +4292,6 @@ function loadChatList() {
 async function loadChatHistory(pseudo) {
     const history = document.getElementById('chat-history');
     if (!history) return;
-
-    history.innerHTML = '<p style="color:#888; text-align:center; padding:20px;">Chargement des messages...</p>';
 
     // Pseudo de la personne connectée
     let monPseudo = "Moi";
