@@ -3770,7 +3770,10 @@ function validateSoumisInscription() {
 function majHeaderMembreConnecte(pseudo, role = "hetero") {
     window.currentUserPseudo = pseudo || '';
     window.currentUserRole = role || '';
-    const header = document.getElementById('userHeaderStatus');    const welcome = document.getElementById('welcomeMessage');
+    if (typeof demarrerMessagesTempsReel === 'function') demarrerMessagesTempsReel();
+
+    const header = document.getElementById('userHeaderStatus');
+    const welcome = document.getElementById('welcomeMessage');
     const guestActions = document.getElementById('guestActions');
     const loggedActions = document.getElementById('loggedActions');
    
@@ -3792,7 +3795,6 @@ function majHeaderMembreConnecte(pseudo, role = "hetero") {
     welcome.innerHTML = message;
     header.style.display = 'flex';
    
-    // Masquer les boutons inscription/connexion
     if (guestActions) guestActions.style.display = 'none';
     if (loggedActions) loggedActions.style.display = 'flex';
 }
@@ -3929,30 +3931,52 @@ function notifyNewMessage() {
 }
 
 function demarrerMessagesTempsReel() {
-    if (!window.supabaseClient || window._sugarMsgLive) return;
+    if (window._sugarMsgLive) return;
     window._sugarMsgLive = true;
-    supabaseClient.channel('messages-live')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, function(payload) {
-            const msg = payload.new || {};
+
+    try {
+        supabaseClient.channel('messages-live')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, function(payload) {
+                appliquerNouveauMessage(payload.new || {});
+            })
+            .subscribe();
+    } catch (e) {
+        console.error(e);
+    }
+
+    if (!window._sugarMsgPoll) {
+        window._sugarMsgPoll = setInterval(function() {
             const moi = getMonPseudo();
             if (!moi) return;
-            if (msg.to_pseudo !== moi && msg.from_pseudo !== moi) return;
-            const other = msg.from_pseudo === moi ? msg.to_pseudo : msg.from_pseudo;
-            if (!conversations[other]) conversations[other] = [];
-            conversations[other].push({
-                sender: msg.from_pseudo === moi ? 'Moi' : msg.from_pseudo,
-                text: msg.text,
-                type: msg.type || 'text',
-                _id: msg.id
+            const avant = JSON.stringify(Object.keys(conversations));
+            chargerMesConversations().then(function() {
+                loadChatList();
+                if (currentChatUser) loadChatHistory(currentChatUser);
             });
-            if (msg.to_pseudo === moi) notifyNewMessage();
-            loadChatList();
-            const box = document.getElementById('modalMessages');
-            if (box && box.style.display === 'flex' && currentChatUser === other) {
-                loadChatHistory(other);
-            }
-        })
-        .subscribe();
+        }, 4000);
+    }
+}
+
+function appliquerNouveauMessage(msg) {
+    const moi = getMonPseudo();
+    if (!moi || !msg) return;
+    if (msg.to_pseudo !== moi && msg.from_pseudo !== moi) return;
+    const other = msg.from_pseudo === moi ? msg.to_pseudo : msg.from_pseudo;
+    if (!other) return;
+    if (!conversations[other]) conversations[other] = [];
+    if (msg.id && conversations[other].some(function(m) { return m._id === msg.id; })) return;
+    conversations[other].push({
+        sender: msg.from_pseudo === moi ? 'Moi' : msg.from_pseudo,
+        text: msg.text,
+        type: msg.type || 'text',
+        _id: msg.id
+    });
+    if (msg.to_pseudo === moi) notifyNewMessage();
+    loadChatList();
+    const box = document.getElementById('modalMessages');
+    if (box && box.style.display === 'flex' && currentChatUser === other) {
+        loadChatHistory(other);
+    }
 }
 
 let depenseCount = 0;
