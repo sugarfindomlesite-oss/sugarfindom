@@ -315,7 +315,11 @@ html, body {
 
   /* Cache la liste gauche sur mobile */
   #chat-list {
-    display: none !important;
+    display: block !important;
+    width: 100% !important;
+    max-height: 120px !important;
+    border-right: none !important;
+    border-bottom: 1px solid #333 !important;
   }
 
   /* La zone de discussion prend tout */
@@ -3986,9 +3990,10 @@ function appliquerNouveauMessage(msg) {
         _id: msg.id
     });
     if (msg.to_pseudo === moi) notifyNewMessage();
+    currentChatUser = other;
     loadChatList();
     const box = document.getElementById('modalMessages');
-    if (box && box.style.display === 'flex' && currentChatUser === other) {
+    if (box && box.style.display === 'flex') {
         loadChatHistory(other);
     }
 }
@@ -4430,7 +4435,12 @@ function toggleMessagingBox() {
     document.getElementById('modalMessages').style.display = 'flex';
     const btn = document.getElementById('btnMessages');
     if (btn) btn.classList.remove('btn-blink');
-    chargerMesConversations().then(function() { loadChatList(); });
+    chargerMesConversations().then(function() {
+        const keys = Object.keys(conversations);
+        if (!currentChatUser && keys.length) currentChatUser = keys[keys.length - 1];
+        loadChatList();
+        if (currentChatUser) loadChatHistory(currentChatUser);
+    });
 }
 
 function proposerContrat() {
