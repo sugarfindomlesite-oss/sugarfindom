@@ -315,11 +315,26 @@ html, body {
 
   /* Cache la liste gauche sur mobile */
   #chat-list {
-    display: block !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
     width: 100% !important;
-    max-height: 120px !important;
+    max-height: 56px !important;
     border-right: none !important;
     border-bottom: 1px solid #333 !important;
+    padding: 8px !important;
+    gap: 8px !important;
+  }
+  #chat-list > div {
+    flex: 0 0 auto !important;
+    max-width: 140px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 13px !important;
+    margin-bottom: 0 !important;
   }
 
   /* La zone de discussion prend tout */
@@ -399,10 +414,12 @@ html, body {
   const SUPABASE_URL = "https://amkniuxsdfegltqionti.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFta25pdXhzZGZlZ2x0cWlvbnRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwOTUwNDEsImV4cCI6MjEwMjY3MTA0MX0.zcC1m7e7qDFt3-HydErqGbuevzA6uZs4MrCTv2W5hQQ";
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
   window.currentUserPseudo = '';
   window.currentUserRole = '';
-
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  emailjs.init("qnl89hQJs5OOsoX_x");
 </script>
 
 </head>
@@ -974,7 +991,7 @@ function retirerAccueil() {
         <h2 style="text-align:center; margin-bottom:25px;">Inscription</h2>
 
         <div style="text-align:center; margin:30px 0;">
-            <button onclick="ouvrirPopupPiedsPuisFormHetero()" style="padding:16px 32px; background:#d4af37; color:black; border:none; border-radius:8px; font-weight:bold; margin:0 12px; font-size:16px;">Tu es HÉTÉRO ALPHA</button>
+            <button onclick="selectRole('hetero')" style="padding:16px 32px; background:#d4af37; color:black; border:none; border-radius:8px; font-weight:bold; margin:0 12px; font-size:16px;">Tu es HÉTÉRO ALPHA</button>
             <button onclick="selectRole('soumis')" style="padding:16px 32px; background:#333; color:white; border:1px solid #666; border-radius:8px; font-weight:bold; margin:0 12px; font-size:16px;">Tu es SOUMIS FINANCIER</button>
         </div>
 
@@ -3346,12 +3363,15 @@ function validateHeteroInscription() {
         return;
     }
 
-    // Passage à la notice
+function fermerPopupPiedsEtOuvrirForm() {
+    const pop = document.getElementById('popup-pieds-hetero');
+    if (pop) pop.style.display = 'none';
     closeModal('modalInscription');
-    setTimeout(() => {
+    setTimeout(function() {
         openModal('modalNotice');
     }, 300);
 }
+
 function goToQuestionnaire() {
     if (!document.getElementById('noticeRead').checked) {
         alert("Vous devez cocher la case 'J'ai lu et compris'");
@@ -3574,6 +3594,7 @@ const finirInscriptionHetero = function(photoFinale) {
         id: Date.now(),
         pseudo: pseudo,
         email: email,
+        motDePasse: pass,
         age: age,
         role: "hetero",
         dept: dept,
@@ -3597,6 +3618,7 @@ const finirInscriptionHetero = function(photoFinale) {
                 pseudo: nouveauHetero.pseudo,
                 role: 'hetero',
                 email: nouveauHetero.email || null,
+                mot_de_passe: pass || null,
                 age: nouveauHetero.age || null,
                 dept: nouveauHetero.dept || null,
                 ville: nouveauHetero.ville || null,
@@ -3696,6 +3718,7 @@ function validateSoumisInscription() {
         const nouveauSoumis = {
             pseudo: pseudo,
             email: email,
+            motDePasse: pass,
             age: parseInt(age),
             role: "soumis",
             dept: dept,
@@ -3720,6 +3743,7 @@ function validateSoumisInscription() {
                     pseudo: nouveauSoumis.pseudo,
                     role: 'soumis',
                     email: nouveauSoumis.email || null,
+                    mot_de_passe: pass || null,
                     age: nouveauSoumis.age || null,
                     dept: nouveauSoumis.dept || null,
                     ville: nouveauSoumis.ville || null,
@@ -4444,21 +4468,36 @@ function toggleMessagingBox() {
 }
 
 function proposerContrat() {
-    closeModal('modalMessages');
-    
-    setTimeout(() => {
-        // Pseudo de la personne connectée
-        let monPseudo = "Propriétaire";
+    let role = window.currentUserRole || '';
+    let monPseudo = getMonPseudo() || 'Moi';
+    const destinataire = currentChatUser;
+    if (!destinataire) {
+        alert("Ouvre d’abord une conversation.");
+        return;
+    }
+
+    if (role === 'soumis') {
+        if (!conversations[destinataire]) conversations[destinataire] = [];
+        conversations[destinataire].push({
+            sender: 'Moi',
+            type: 'contrat_demande',
+            text: '📋 Contrat vide envoyé — à remplir par l’hétéro'
+        });
         try {
-            const session = JSON.parse(localStorage.getItem("sugar_active_session"));
-            if (session && session.pseudo) {
-                monPseudo = session.pseudo;
-            }
-        } catch(e) {}
+            supabaseClient.from('messages').insert([{
+                from_pseudo: monPseudo,
+                to_pseudo: destinataire,
+                text: '📋 Contrat vide envoyé — à remplir par l’hétéro',
+                type: 'contrat_demande'
+            }]);
+        } catch (e) {}
+        loadChatHistory(destinataire);
+        alert("Contrat vide envoyé. L’hétéro doit le remplir de son côté.");
+        return;
+    }
 
-        // Pseudo de la personne avec qui on discute
-        const destinataire = currentChatUser || "Soumis";
-
+    closeModal('modalMessages');
+    setTimeout(function() {
         ouvrirContrat(monPseudo, destinataire);
     }, 200);
 }
@@ -4959,24 +4998,47 @@ function toggleAutreRenommage(checkbox) {
     document.getElementById('autreRenommage').style.display = checkbox.checked ? 'inline-block' : 'none';
 }
 
-function motDePasseOublie() {
-    const pseudo = prompt("Entrez votre pseudo pour réinitialiser le mot de passe :");
-    
+async function motDePasseOublie() {
+    const pseudo = prompt("Ton pseudo SugarFindom :");
     if (!pseudo) return;
 
-    // On cherche le profil
-    const profil = baseProfils.find(p => p.pseudo && p.pseudo.toLowerCase() === pseudo.toLowerCase());
+    const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('pseudo,email')
+        .ilike('pseudo', pseudo.trim())
+        .maybeSingle();
 
-    if (!profil) {
-        alert("❌ Aucun compte trouvé avec ce pseudo.");
+    if (error || !data || !data.email) {
+        alert("Aucun compte trouvé, ou pas d'email sur ce profil.");
         return;
     }
 
-    // Simulation d'envoi d'email
-    alert(`✅ Un lien de réinitialisation a été envoyé à l'adresse associée au compte "${pseudo}".\n\n(Simulation : en vrai site, un vrai email serait envoyé)`);
-    
-    // Optionnel : on peut afficher le mot de passe en console pour les tests
-    console.log("Mot de passe du compte :", profil.motDePasse || "non enregistré");
+    const nouveau = 'SF' + Math.random().toString(36).slice(2, 10);
+
+    const { error: err2 } = await supabaseClient
+        .from('profiles')
+        .update({ mot_de_passe: nouveau })
+        .eq('pseudo', data.pseudo);
+
+    if (err2) {
+        alert("Erreur base : " + err2.message);
+        return;
+    }
+
+    const local = baseProfils.find(p => p.pseudo && p.pseudo.toLowerCase() === data.pseudo.toLowerCase());
+    if (local) local.motDePasse = nouveau;
+
+    try {
+        await emailjs.send("service_sb4v7eo", "template_yasuebd", {
+            email: data.email,
+            pseudo: data.pseudo,
+            pass: nouveau
+        });
+        alert("Un nouveau mot de passe a été envoyé à l'adresse du compte.");
+    } catch (e) {
+        console.error(e);
+        alert("Mot de passe changé en base, mais le mail n'est pas parti.");
+    }
 }
 
 function openMedia(type, src) {
