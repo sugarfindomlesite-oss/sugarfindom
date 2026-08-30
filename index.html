@@ -3363,6 +3363,10 @@ function validateHeteroInscription() {
         return;
     }
 
+    const pop = document.getElementById('popup-pieds-hetero');
+    if (pop) pop.style.display = 'flex';
+}
+
 function fermerPopupPiedsEtOuvrirForm() {
     const pop = document.getElementById('popup-pieds-hetero');
     if (pop) pop.style.display = 'none';
