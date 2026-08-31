@@ -1342,15 +1342,19 @@ function retirerAccueil() {
                 </div>
 
                 <!-- Zone d'écriture message -->
-                <div style="padding:12px 20px; background:#1e1e1e; border-top:1px solid #333; display:flex; gap:10px;">
-                    <input type="text" id="messageInput" placeholder="Écrire un message..." 
-                           style="flex:1; padding:12px; background:#222; border:1px solid #444; border-radius:6px; color:white;">
-                    <button onclick="sendMessage()" 
-                            style="background:var(--primary-color); color:black; border:none; padding:0 25px; border-radius:6px; font-weight:bold;">
+                <div style="padding:12px 20px; background:#1e1e1e; border-top:1px solid #333; display:flex; gap:10px; align-items:center;">
+                    <input type="file" id="chatPhotoInput" accept="image/*" style="display:none;" onchange="envoyerPhotoChat()">
+                    <button type="button" onclick="document.getElementById('chatPhotoInput').click()"
+                            style="background:#333; color:#fff; border:1px solid #555; padding:12px 14px; border-radius:6px; cursor:pointer; flex-shrink:0;">
+                        📷
+                    </button>
+                    <input type="text" id="messageInput" placeholder="Écrire un message..."
+                           style="flex:1; padding:12px; background:#222; border:1px solid #444; border-radius:6px; color:white; min-width:0;">
+                    <button onclick="sendMessage()"
+                            style="background:var(--primary-color); color:black; border:none; padding:0 18px; border-radius:6px; font-weight:bold; flex-shrink:0;">
                         Envoyer
                     </button>
-                </div>
-            </div>
+                </div>            </div>
         </div>
     </div>
 </div>
@@ -4403,13 +4407,11 @@ async function loadChatHistory(pseudo) {
                         📜 Contrat d'appartenance signé (cliquer pour lire)
                     </button>
                 </div>`;
-        } else if ((msg.text || '').indexOf('Contrat vide') !== -1) {
+        } else if (msg.type === 'image' || (msg.text || '').indexOf('data:image') === 0) {
             history.innerHTML += `
-                <div style="margin:10px 0; text-align:center;">
-                    <button onclick="ouvrirContratDepuisMessage()"
-                            style="background:#1e1e1e; border:1px solid #4fc3f7; color:#4fc3f7; padding:10px 18px; border-radius:8px; cursor:pointer;">
-                        📋 Contrat vide — cliquer pour le remplir
-                    </button>
+                <div style="text-align:${msg.sender === 'Moi' ? 'right' : 'left'};">
+                    <img src="${msg.text}" onclick="openMedia('image', this.src)"
+                         style="max-width:220px; max-height:220px; object-fit:cover; border-radius:8px; cursor:pointer; border:1px solid #555;">
                 </div>`;
         } else {
             const align = msg.sender === 'Moi' ? 'right' : 'left';
@@ -4488,8 +4490,46 @@ function sendMessage() {
     }
 }
 
-function toggleMessagingBox() {
-    let connecte = false;
+async function envoyerPhotoChat() {
+    const input = document.getElementById('chatPhotoInput');
+    if (!input || !input.files || !input.files[0] || !currentChatUser) {
+        if (input) input.value = '';
+        return;
+    }
+    const file = input.files[0];
+    if (file.size > 1500000) {
+        alert("Photo trop lourde (max 1,5 Mo). Compresse-la.");
+        input.value = '';
+        return;
+    }
+    const monPseudo = getMonPseudo() || 'Moi';
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const src = e.target.result;
+        if (!conversations[currentChatUser]) conversations[currentChatUser] = [];
+        conversations[currentChatUser].push({
+            sender: 'Moi',
+            text: src,
+            type: 'image'
+        });
+        if (typeof loadChatHistory === 'function') loadChatHistory(currentChatUser);
+        try {
+            const { error } = await supabaseClient.from('messages').insert([{
+                from_pseudo: monPseudo,
+                to_pseudo: currentChatUser,
+                text: src,
+                type: 'image'
+            }]);
+            if (error) alert("Photo non enregistrée : " + error.message);
+        } catch (err) {
+            console.error(err);
+        }
+        input.value = '';
+    };
+    reader.readAsDataURL(file);
+}
+
+function toggleMessagingBox() {    let connecte = false;
     try {
         const session = localStorage.getItem("sugar_active_session");
         if (session) {
