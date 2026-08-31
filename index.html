@@ -3875,14 +3875,22 @@ function remplirChampsConnexion() {
 function executerConnexion() {
     let login = '';
     let pass = '';
-    document.querySelectorAll('#loginEmail').forEach(function(el) {
-        if (el.value.trim()) login = el.value.trim();
-    });
-    document.querySelectorAll('#loginPass').forEach(function(el) {
-        if (el.value.trim()) pass = el.value.trim();
-    });
-    if (!login) login = (localStorage.getItem('sugar_saved_email') || '').trim();
-    if (!pass) pass = (localStorage.getItem('sugar_saved_pass') || '').trim();
+    const modalOuverte = document.getElementById('modalConnexion')?.style.display === 'flex'
+        ? document.getElementById('modalConnexion')
+        : document.getElementById('modalAuth')?.style.display === 'flex'
+            ? document.getElementById('modalAuth')
+            : null;
+    if (modalOuverte) {
+        const iLogin = modalOuverte.querySelector('#loginEmail');
+        const iPass = modalOuverte.querySelector('#loginPass');
+        if (iLogin) login = iLogin.value.trim();
+        if (iPass) pass = iPass.value.trim();
+    } else {
+        const iLogin = document.getElementById('loginEmail');
+        const iPass = document.getElementById('loginPass');
+        if (iLogin) login = iLogin.value.trim();
+        if (iPass) pass = iPass.value.trim();
+    }
     if (!login || !pass) {
         alert("❌ Veuillez renseigner votre email/pseudo et mot de passe.");
         return;
