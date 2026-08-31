@@ -666,15 +666,7 @@ document.addEventListener("DOMContentLoaded", function() {
     document.body.classList.add('landing-open');
 
     // Pré-remplissage automatique (sans case à cocher)
-    const savedEmail = localStorage.getItem("sugar_saved_email");
-    const savedPass = localStorage.getItem("sugar_saved_pass");
-   
-    if (savedEmail && document.getElementById('loginEmail')) {
-        document.getElementById('loginEmail').value = savedEmail;
-    }
-    if (savedPass && document.getElementById('loginPass')) {
-        document.getElementById('loginPass').value = savedPass;
-    }
+    if (typeof remplirChampsConnexion === 'function') remplirChampsConnexion();
 
     const btn = document.getElementById('btn-acceder-exclusif');
     if (btn) {
@@ -1317,7 +1309,7 @@ function retirerAccueil() {
         <div style="display:flex; flex:1; overflow:hidden;">
 
             <!-- Liste des conversations (gauche) -->
-            <div id="chat-list" style="width:280px; border-right:1px solid #333; overflow-y:auto; background:#1a1a1a; padding:10px;">
+            <div id="chat-list" style="flex:0 0 260px; min-width:200px; width:260px; border-right:1px solid #333; overflow-y:auto; background:#1a1a1a; padding:10px;">
                 <!-- Rempli par JS -->
             </div>
 
@@ -3859,11 +3851,33 @@ function majHeaderMembreConnecte(pseudo, role = "hetero") {
 
 // ===================== CONNEXION =====================
 
+function remplirChampsConnexion() {
+    let pseudo = '';
+    let pass = '';
+    try {
+        pseudo = localStorage.getItem('sugar_saved_email') || '';
+        pass = localStorage.getItem('sugar_saved_pass') || '';
+    } catch (e) {}
+    if (!pseudo && !pass) return;
+    document.querySelectorAll('#loginEmail').forEach(function(el) {
+        if (pseudo) el.value = pseudo;
+    });
+    document.querySelectorAll('#loginPass').forEach(function(el) {
+        if (pass) el.value = pass;
+    });
+}
 
 function executerConnexion() {
-    const login = document.getElementById('loginEmail').value.trim();
-    const pass = document.getElementById('loginPass').value.trim();
-
+    let login = '';
+    let pass = '';
+    document.querySelectorAll('#loginEmail').forEach(function(el) {
+        if (el.value.trim()) login = el.value.trim();
+    });
+    document.querySelectorAll('#loginPass').forEach(function(el) {
+        if (el.value.trim()) pass = el.value.trim();
+    });
+    if (!login) login = (localStorage.getItem('sugar_saved_email') || '').trim();
+    if (!pass) pass = (localStorage.getItem('sugar_saved_pass') || '').trim();
     if (!login || !pass) {
         alert("❌ Veuillez renseigner votre email/pseudo et mot de passe.");
         return;
@@ -3935,19 +3949,21 @@ function openAuthModal() {
 }
 
 function switchToLogin() {
-    document.getElementById('authContent').innerHTML = `
+    const box = document.getElementById('authContent');
+    if (!box) return;
+    box.innerHTML = `
         <h3 style="text-align:center; color:var(--primary-color);">Connexion</h3>
-        <input type="text" id="loginEmail" placeholder="Email ou Pseudo" style="width:100%; padding:12px; margin:8px 0;">
-        <input type="password" id="loginPass" placeholder="Mot de passe" style="width:100%; padding:12px; margin:8px 0;">
+        <input type="text" id="loginEmail" placeholder="Pseudo" autocomplete="username" style="width:100%; padding:12px; margin:8px 0;">
+        <input type="password" id="loginPass" placeholder="Mot de passe" autocomplete="current-password" style="width:100%; padding:12px; margin:8px 0;">
         <button class="btn-main" style="width:100%; margin-top:15px;" onclick="executerConnexion()">Se connecter</button>
-        
         <div style="text-align:center; margin-top:20px; font-size:14px;">
-            Pas encore de compte ? 
+            Pas encore de compte ?
             <span onclick="goToFullInscription()" style="color:#4fc3f7; cursor:pointer; text-decoration:underline; font-weight:bold;">
                 S'inscrire
             </span>
         </div>
     `;
+    if (typeof remplirChampsConnexion === 'function') remplirChampsConnexion();
 }
 
 function goToFullInscription() {
@@ -4399,6 +4415,9 @@ async function loadChatHistory(pseudo) {
     }
 
     conversations[pseudo].forEach((msg, i) => {
+        const raw = String(msg.text || '');
+        const estPhoto = msg.type === 'image' || raw.indexOf('data:image') !== -1;
+
         if (msg.type === 'contrat') {
             history.innerHTML += `
                 <div style="margin:10px 0; text-align:center;">
@@ -4407,10 +4426,18 @@ async function loadChatHistory(pseudo) {
                         📜 Contrat d'appartenance signé (cliquer pour lire)
                     </button>
                 </div>`;
-        } else if (msg.type === 'image' || (msg.text || '').indexOf('data:image') === 0) {
+        } else if (raw.indexOf('Contrat vide') !== -1) {
             history.innerHTML += `
-                <div style="text-align:${msg.sender === 'Moi' ? 'right' : 'left'};">
-                    <img src="${msg.text}" onclick="openMedia('image', this.src)"
+                <div style="margin:10px 0; text-align:center;">
+                    <button onclick="ouvrirContratDepuisMessage()"
+                            style="background:#1e1e1e; border:1px solid #4fc3f7; color:#4fc3f7; padding:10px 18px; border-radius:8px; cursor:pointer;">
+                        📋 Contrat vide — cliquer pour le remplir
+                    </button>
+                </div>`;
+        } else if (estPhoto) {
+            history.innerHTML += `
+                <div style="text-align:${msg.sender === 'Moi' ? 'right' : 'left'}; margin:8px 0;">
+                    <img src="${raw}" onclick="openMedia('image', this.src)"
                          style="max-width:220px; max-height:220px; object-fit:cover; border-radius:8px; cursor:pointer; border:1px solid #555;">
                 </div>`;
         } else {
@@ -4418,8 +4445,8 @@ async function loadChatHistory(pseudo) {
             const bg = msg.sender === 'Moi' ? '#2563eb' : '#333';
             history.innerHTML += `
                 <div style="text-align:${align};">
-                    <span style="display:inline-block; background:${bg}; color:white; padding:8px 12px; border-radius:8px; max-width:75%;">
-                        ${msg.text}
+                    <span style="display:inline-block; background:${bg}; color:white; padding:8px 12px; border-radius:8px; max-width:75%; word-break:break-word;">
+                        ${raw}
                     </span>
                 </div>`;
         }
