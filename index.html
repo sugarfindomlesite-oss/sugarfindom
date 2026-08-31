@@ -4398,17 +4398,25 @@ async function loadChatHistory(pseudo) {
         if (msg.type === 'contrat') {
             history.innerHTML += `
                 <div style="margin:10px 0; text-align:center;">
-                    <button onclick="voirContratMessage(${i})" 
+                    <button onclick="voirContratMessage(${i})"
                             style="background:#1e1e1e; border:1px solid #d4af37; color:#d4af37; padding:10px 18px; border-radius:8px; cursor:pointer;">
                         📜 Contrat d'appartenance signé (cliquer pour lire)
+                    </button>
+                </div>`;
+        } else if ((msg.text || '').indexOf('Contrat vide') !== -1) {
+            history.innerHTML += `
+                <div style="margin:10px 0; text-align:center;">
+                    <button onclick="ouvrirContratDepuisMessage()"
+                            style="background:#1e1e1e; border:1px solid #4fc3f7; color:#4fc3f7; padding:10px 18px; border-radius:8px; cursor:pointer;">
+                        📋 Contrat vide — cliquer pour le remplir
                     </button>
                 </div>`;
         } else {
             const align = msg.sender === 'Moi' ? 'right' : 'left';
             const bg = msg.sender === 'Moi' ? '#2563eb' : '#333';
             history.innerHTML += `
-                <div style="text-align:${align}; margin:8px 0;">
-                    <span style="display:inline-block; background:${bg}; color:white; padding:8px 14px; border-radius:12px; max-width:75%;">
+                <div style="text-align:${align};">
+                    <span style="display:inline-block; background:${bg}; color:white; padding:8px 12px; border-radius:8px; max-width:75%;">
                         ${msg.text}
                     </span>
                 </div>`;
@@ -4417,6 +4425,25 @@ async function loadChatHistory(pseudo) {
 
     // Scroll en bas
     history.scrollTop = history.scrollHeight;
+}
+
+function ouvrirContratDepuisMessage() {
+    let role = window.currentUserRole || '';
+    try {
+        const session = JSON.parse(localStorage.getItem("sugar_active_session") || "{}");
+        if (!role && session.role) role = session.role;
+    } catch (e) {}
+    if (role === 'soumis') {
+        alert("Seul l’hétéro remplit le contrat.");
+        return;
+    }
+    const monPseudo = getMonPseudo() || 'Moi';
+    const destinataire = currentChatUser;
+    if (!destinataire) return;
+    closeModal('modalMessages');
+    setTimeout(function() {
+        ouvrirContrat(monPseudo, destinataire);
+    }, 200);
 }
 
 function sendMessage() {
@@ -5039,17 +5066,27 @@ function toggleAutreRenommage(checkbox) {
 }
 
 async function motDePasseOublie() {
-    const pseudo = prompt("Ton pseudo SugarFindom :");
-    if (!pseudo) return;
+    const saisie = prompt("Ton pseudo OU ton email d'inscription :");
+    if (!saisie) return;
+    const v = saisie.trim();
 
     const { data, error } = await supabaseClient
         .from('profiles')
         .select('pseudo,email')
-        .ilike('pseudo', pseudo.trim())
-        .maybeSingle();
+        .or('pseudo.ilike.' + v + ',email.ilike.' + v)
+        .limit(1);
 
-    if (error || !data || !data.email) {
-        alert("Aucun compte trouvé, ou pas d'email sur ce profil.");
+    if (error) {
+        alert("Erreur base : " + error.message);
+        return;
+    }
+    if (!data || !data.length) {
+        alert("Aucun profil trouvé pour : " + v);
+        return;
+    }
+    const profil = data[0];
+    if (!profil.email) {
+        alert("Compte trouvé (" + profil.pseudo + ") mais aucun email dans la table.");
         return;
     }
 
@@ -5058,23 +5095,23 @@ async function motDePasseOublie() {
     const { error: err2 } = await supabaseClient
         .from('profiles')
         .update({ mot_de_passe: nouveau })
-        .eq('pseudo', data.pseudo);
+        .eq('pseudo', profil.pseudo);
 
     if (err2) {
         alert("Erreur base : " + err2.message);
         return;
     }
 
-    const local = baseProfils.find(p => p.pseudo && p.pseudo.toLowerCase() === data.pseudo.toLowerCase());
+    const local = baseProfils.find(p => p.pseudo && p.pseudo.toLowerCase() === profil.pseudo.toLowerCase());
     if (local) local.motDePasse = nouveau;
 
     try {
         await emailjs.send("service_sb4v7eo", "template_yasuebd", {
-            email: data.email,
-            pseudo: data.pseudo,
+            email: profil.email,
+            pseudo: profil.pseudo,
             pass: nouveau
         });
-        alert("Un nouveau mot de passe a été envoyé à l'adresse du compte.");
+        alert("Nouveau mot de passe envoyé à : " + profil.email);
     } catch (e) {
         console.error(e);
         alert("Mot de passe changé en base, mais le mail n'est pas parti.");
