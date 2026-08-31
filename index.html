@@ -702,6 +702,7 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         }
     } catch (e) {}
+    if (typeof remplirTaillePoids === 'function') remplirTaillePoids();
 });
 
     // Efface complètement les calques supérieurs sans perturber votre page de profils
@@ -1126,9 +1127,12 @@ function retirerAccueil() {
             <select id="hLongueur" style="width:100%; padding:8px; margin:4px 0;" onchange="this.style.border=''; this.style.background=''"><option value="">Longueur cheveux</option><option>Courts</option><option>Mi-longs</option><option>Longs</option><option>Rasés</option></select>
             <select id="hYeux" style="width:100%; padding:8px; margin:4px 0;" onchange="this.style.border=''; this.style.background=''"><option value="">Couleur yeux</option><option>Bleus</option><option>Verts</option><option>Marrons</option><option>Noirs</option></select>
 
-            <input type="number" id="hTaille" min="140" max="220" step="1" placeholder="Taille en cm (ex: 167)" style="width:100%; padding:8px; margin:4px 0; box-sizing:border-box;">
-            <input type="number" id="hPoids" min="40" max="200" step="1" placeholder="Poids en kg (ex: 73)" style="width:100%; padding:8px; margin:4px 0; box-sizing:border-box;">
-            <select id="hPointure" style="width:100%; padding:8px; margin:4px 0;" onchange="this.style.border=''; this.style.background=''">
+            <select id="hTaille" style="width:100%; padding:8px; margin:4px 0;" onchange="this.style.border=''; this.style.background=''">
+                <option value="">Taille (cm)</option>
+            </select>
+            <select id="hPoids" style="width:100%; padding:8px; margin:4px 0;" onchange="this.style.border=''; this.style.background=''">
+                <option value="">Poids (kg)</option>
+            </select>
                 <option value="">Pointure</option>
                 <option value="40">40</option><option value="41">41</option><option value="42">42</option>
                 <option value="43">43</option><option value="44">44</option><option value="45">45</option>
@@ -3363,6 +3367,28 @@ function fermerPopupPiedsEtOuvrirForm() {
         openModal('modalNotice');
     }, 300);
 }
+
+function remplirTaillePoids() {
+    const t = document.getElementById('hTaille');
+    const p = document.getElementById('hPoids');
+    if (t && t.options.length < 3) {
+        for (let i = 150; i <= 200; i++) {
+            const o = document.createElement('option');
+            o.value = String(i);
+            o.textContent = i + ' cm';
+            t.appendChild(o);
+        }
+    }
+    if (p && p.options.length < 3) {
+        for (let i = 50; i <= 150; i++) {
+            const o = document.createElement('option');
+            o.value = String(i);
+            o.textContent = i + ' kg';
+            p.appendChild(o);
+        }
+    }
+}
+
 
 function goToQuestionnaire() {
     if (!document.getElementById('noticeRead').checked) {
