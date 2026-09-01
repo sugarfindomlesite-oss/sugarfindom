@@ -3125,6 +3125,20 @@ function getMonPseudo() {
     return '';
 }
 
+function normPseudo(s) {
+    return String(s || '')
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, '');
+}
+function estMoi(pseudo) {
+    const a = normPseudo(typeof getMonPseudo === 'function' ? getMonPseudo() : '');
+    const b = normPseudo(pseudo);
+    return !!(a && b && a === b);
+}
+
 function showProfileDetail(p) {
     let html = `
         <h2 style="text-align:center; color:var(--primary-color);">${p.pseudo} (${p.age} ans)</h2>
@@ -3245,7 +3259,9 @@ if (monPseudoActuel && monPseudoActuel.toLowerCase() === p.pseudo.toLowerCase())
     } catch (e) {}
 
     // Bouton Discuter uniquement si ce n'est PAS mon propre profil
-    if (!monPseudoActuel || monPseudoActuel.toLowerCase() !== p.pseudo.toLowerCase()) {
+    if (estMoi(p.pseudo)) {
+        // pas de bouton
+    } else if (getMonPseudo()) {
         html += `
             <button onclick="openMessagingWith('${p.pseudo}'); this.parentElement.parentElement.remove()"
                     style="width:100%; margin:15px 0 10px 0; background:#00cc44; color:black; padding:14px; border:none; border-radius:6px; font-weight:bold;">
@@ -3303,8 +3319,7 @@ function renderProfilsGrid(filteredList) {
         if (!monPseudo && typeof sessionSecoursDeconnectee !== 'undefined' && sessionSecoursDeconnectee && sessionSecoursDeconnectee.pseudo) {
             monPseudo = String(sessionSecoursDeconnectee.pseudo).trim();
         }
-        const isMoi = !!(monPseudo && p.pseudo && monPseudo.toLowerCase() === String(p.pseudo).trim().toLowerCase());
-
+        const isMoi = estMoi(p.pseudo);
         card.innerHTML = `
             <div class="profile-img-container">
                 <img src="${p.photo}" alt="Photo">
@@ -4300,6 +4315,11 @@ let conversations = {};
 
 function openMessagingWith(pseudo) {
     if (!pseudo) return;
+    const moi = (typeof getMonPseudo === 'function' ? getMonPseudo() : (window.currentUserPseudo || '')).trim().toLowerCase();
+    if (moi && String(pseudo).trim().toLowerCase() === moi) {
+        alert("Tu ne peux pas discuter avec toi-même.");
+        return;
+    }
 
     // Vérification connexion
     let connecte = false;
@@ -4352,6 +4372,8 @@ async function chargerMesConversations() {
         (data || []).forEach(function(msg) {
             const other = msg.from_pseudo === moi ? msg.to_pseudo : msg.from_pseudo;
             if (!other) return;
+            if (estMoi(other)) return;
+            if (!other) return;
             if (!conversations[other]) conversations[other] = [];
             const already = conversations[other].some(function(m) {
                 return m._id === msg.id;
@@ -4378,6 +4400,7 @@ function loadChatList() {
     }
     list.innerHTML = '';
     keys.forEach(function(user) {
+        if (estMoi(user)) return;
         const isActive = user === currentChatUser;
         list.innerHTML += `
             <div onclick="currentChatUser='${user}'; loadChatList(); loadChatHistory('${user}')"
