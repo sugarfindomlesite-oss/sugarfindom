@@ -806,12 +806,12 @@ function retirerAccueil() {
         
         <div style="margin-bottom: 15px;">
             <label style="display:block; margin-bottom:6px; font-size:14px; color:var(--text-light);">Pseudo *</label>
-<input type="text" id="loginEmail" placeholder="Entrez votre pseudo..." style="width:100%; padding:12px; box-sizing:border-box; border-radius:5px; border:1px solid #333; background:#222; color:#fff;">
+             <input type="text" id="loginPseudoVisible" placeholder="Entrez votre pseudo..." style="width:100%; padding:12px; box-sizing:border-box; border-radius:5px; border:1px solid #333; background:#222; color:#fff;">
         </div>
         
         <div style="margin-bottom: 25px;">
             <label style="display:block; margin-bottom:6px; font-size:14px; color:var(--text-light);">Mot de passe *</label>
-            <input type="password" id="loginPass" placeholder="Entrez votre mot de passe..." style="width:100%; padding:12px; box-sizing:border-box; border-radius:5px; border:1px solid #333; background:#222; color:#fff;">
+            <input type="password" id="loginPassVisible" placeholder="Entrez votre mot de passe..." style="width:100%; padding:12px; box-sizing:border-box; border-radius:5px; border:1px solid #333; background:#222; color:#fff;">
         </div>
         
         <button class="btn-main" style="width:100%; margin-bottom:12px; padding: 14px;" onclick="executerConnexion()">Se connecter</button>
@@ -3870,56 +3870,66 @@ function remplirChampsConnexion() {
     document.querySelectorAll('#loginPass').forEach(function(el) {
         if (pass) el.value = pass;
     });
+    const a = document.getElementById('loginPseudoVisible');
+    const b = document.getElementById('loginPassVisible');
+    if (a && pseudo) a.value = pseudo;
+    if (b && pass) b.value = pass;
 }
 
-function executerConnexion() {
-    let login = '';
-    let pass = '';
-    const modalOuverte = document.getElementById('modalConnexion')?.style.display === 'flex'
-        ? document.getElementById('modalConnexion')
-        : document.getElementById('modalAuth')?.style.display === 'flex'
-            ? document.getElementById('modalAuth')
-            : null;
-    if (modalOuverte) {
-        const iLogin = modalOuverte.querySelector('#loginEmail');
-        const iPass = modalOuverte.querySelector('#loginPass');
-        if (iLogin) login = iLogin.value.trim();
-        if (iPass) pass = iPass.value.trim();
-    } else {
-        const iLogin = document.getElementById('loginEmail');
-        const iPass = document.getElementById('loginPass');
-        if (iLogin) login = iLogin.value.trim();
-        if (iPass) pass = iPass.value.trim();
-    }
+async function executerConnexion() {
+    const visible = document.getElementById('modalConnexion');
+    const iLogin = (visible && visible.style.display === 'flex')
+        ? document.getElementById('loginPseudoVisible')
+        : document.getElementById('loginEmail');
+    const iPass = (visible && visible.style.display === 'flex')
+        ? document.getElementById('loginPassVisible')
+        : document.getElementById('loginPass');
+
+    const login = (iLogin && iLogin.value ? iLogin.value : '').trim();
+    const pass = (iPass && iPass.value ? iPass.value : '').trim();
+
     if (!login || !pass) {
-        alert("❌ Veuillez renseigner votre email/pseudo et mot de passe.");
+        alert("❌ Pseudo et mot de passe obligatoires.");
         return;
     }
 
-    // On cherche le vrai profil
-    let vraiPseudo = login;
-    let role = "user";
-
-    const profilTrouve = baseProfils.find(p => 
-        (p.pseudo && p.pseudo.toLowerCase() === login.toLowerCase()) || 
+    let profilTrouve = baseProfils.find(p =>
+        (p.pseudo && p.pseudo.toLowerCase() === login.toLowerCase()) ||
         (p.email && p.email.toLowerCase() === login.toLowerCase())
     );
 
     if (!profilTrouve) {
-        alert("❌ Pseudo ou email inconnu.");
+        try {
+            const { data, error } = await supabaseClient
+                .from('profiles')
+                .select('*')
+                .or('pseudo.ilike.' + login + ',email.ilike.' + login)
+                .limit(1);
+            if (!error && data && data[0]) {
+                profilTrouve = {
+                    pseudo: data[0].pseudo,
+                    email: data[0].email,
+                    role: data[0].role,
+                    motDePasse: data[0].mot_de_passe
+                };
+            }
+        } catch (e) {}
+    }
+
+    if (!profilTrouve) {
+        alert("❌ Pseudo inconnu : " + login);
+        return;
+    }
+    if (profilTrouve.motDePasse && String(profilTrouve.motDePasse) !== String(pass)) {
+        alert("❌ Mot de passe incorrect pour " + profilTrouve.pseudo);
         return;
     }
 
-    if (profilTrouve.motDePasse && profilTrouve.motDePasse !== pass) {
-        alert("❌ Mot de passe incorrect.");
-        return;
-    }
-
-    vraiPseudo = profilTrouve.pseudo;
-    role = profilTrouve.role || "user";
+    const vraiPseudo = profilTrouve.pseudo;
+    const role = profilTrouve.role || "user";
 
     try {
-        localStorage.setItem("sugar_saved_email", login);
+        localStorage.setItem("sugar_saved_email", vraiPseudo);
         localStorage.setItem("sugar_saved_pass", pass);
         localStorage.setItem("sugar_active_session", JSON.stringify({
             pseudo: vraiPseudo,
@@ -3932,13 +3942,12 @@ function executerConnexion() {
     window.currentUserPseudo = vraiPseudo;
     window.currentUserRole = role;
 
-    majHeaderMembreConnecte(vraiPseudo, role);    closeModal('modalAuth');
+    majHeaderMembreConnecte(vraiPseudo, role);
+    closeModal('modalAuth');
     closeModal('modalConnexion');
-
-    alert(`✅ Connexion réussie. Bienvenue ${vraiPseudo} !`);
-    triggerFilter();
+    alert("✅ Connexion : " + vraiPseudo);
+    if (typeof triggerFilter === "function") triggerFilter();
 }
-
 
 function closeModal(id) {
     document.getElementById(id).style.display = 'none';
