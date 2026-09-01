@@ -3126,6 +3126,16 @@ function getMonPseudo() {
 }
 
 function normPseudo(s) {
+    return String(s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '');
+}
+
+function estMoi(pseudo) {
+    const a = normPseudo(typeof getMonPseudo === 'function' ? getMonPseudo() : '');
+    const b = normPseudo(pseudo);
+    return !!(a && b && a === b);
+}
+
+function normPseudo(s) {
     return String(s || '')
         .trim()
         .toLowerCase()
@@ -3133,6 +3143,7 @@ function normPseudo(s) {
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/\s+/g, '');
 }
+
 function estMoi(pseudo) {
     const a = normPseudo(typeof getMonPseudo === 'function' ? getMonPseudo() : '');
     const b = normPseudo(pseudo);
@@ -4372,6 +4383,8 @@ async function chargerMesConversations() {
         (data || []).forEach(function(msg) {
             const other = msg.from_pseudo === moi ? msg.to_pseudo : msg.from_pseudo;
             if (!other) return;
+            if (typeof estMoi === 'function' && estMoi(other)) return;
+            if (!other) return;
             if (estMoi(other)) return;
             if (!other) return;
             if (!conversations[other]) conversations[other] = [];
@@ -4400,6 +4413,8 @@ function loadChatList() {
     }
     list.innerHTML = '';
     keys.forEach(function(user) {
+        if (typeof estMoi === 'function' && estMoi(user)) return;
+        const isActive = user === currentChatUser;
         if (estMoi(user)) return;
         const isActive = user === currentChatUser;
         list.innerHTML += `
@@ -4521,6 +4536,10 @@ function ouvrirContratDepuisMessage() {
 }
 
 function sendMessage() {
+    if (typeof estMoi === 'function' && estMoi(currentChatUser)) {
+        alert("Tu ne peux pas te parler à toi-même.");
+        return;
+    }
     const input = document.getElementById('messageInput');
     if (!input || !input.value.trim() || !currentChatUser) return;
 
