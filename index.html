@@ -3832,7 +3832,7 @@ function validateSoumisInscription() {
         window.currentUserPseudo = pseudo;
         window.currentUserRole = "soumis";
         majHeaderMembreConnecte(pseudo, "soumis");        if (typeof triggerFilter === "function") triggerFilter();
-        alert("🎉 Inscription validée avec succès !\nBienvenue sur SugarFindom.");
+        // pas d'alerte
         closeModal('modalInscription');
     };
 
@@ -4697,7 +4697,7 @@ async function proposerContrat() {
         } catch (e) {
             console.error(e);
         }
-        alert("Contrat vide envoyé. L’hétéro le voit dans la discussion.");
+                // pas d'alerte
         return;
     }
 
