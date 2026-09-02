@@ -3709,7 +3709,7 @@ const finirInscriptionHetero = function(photoFinale) {
     window.currentUserRole = "hetero";
     majHeaderMembreConnecte(pseudo, "hetero");    if (typeof triggerFilter === "function") triggerFilter();
 
-    alert("🎉 Inscription hétéro validée !\nBienvenue sur SugarFindom.");
+    // pas d'alerte
     closeModal('modalQuestionnaire');
 };
 
@@ -4619,7 +4619,8 @@ async function envoyerPhotoChat() {
     reader.readAsDataURL(file);
 }
 
-function toggleMessagingBox() {    let connecte = false;
+function toggleMessagingBox() {
+    let connecte = false;
     try {
         const session = localStorage.getItem("sugar_active_session");
         if (session) {
@@ -4639,14 +4640,21 @@ function toggleMessagingBox() {    let connecte = false;
         return;
     }
 
+    currentChatUser = null;
     document.getElementById('modalMessages').style.display = 'flex';
     const btn = document.getElementById('btnMessages');
     if (btn) btn.classList.remove('btn-blink');
+    const hist = document.getElementById('chat-history');
+    if (hist) hist.innerHTML = '<p style="color:#888; text-align:center; padding:20px;">Aucune conversation. Clique Discuter sur une fiche.</p>';
     chargerMesConversations().then(function() {
-        const keys = Object.keys(conversations);
-        if (!currentChatUser && keys.length) currentChatUser = keys[keys.length - 1];
+        const keys = Object.keys(conversations).filter(function(u) {
+            return typeof estMoi !== 'function' || !estMoi(u);
+        });
         loadChatList();
-        if (currentChatUser) loadChatHistory(currentChatUser);
+        if (keys.length) {
+            currentChatUser = keys[keys.length - 1];
+            loadChatHistory(currentChatUser);
+        }
     });
 }
 
