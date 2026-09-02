@@ -3729,6 +3729,7 @@ const finirInscriptionHetero = function(photoFinale) {
     window.currentUserPseudo = pseudo;
     window.currentUserRole = "hetero";
     majHeaderMembreConnecte(pseudo, "hetero");    if (typeof triggerFilter === "function") triggerFilter();
+    envoyerIdentifiantsMail(email, pseudo, pass);
 
     // pas d'alerte
     closeModal('modalQuestionnaire');
@@ -3853,6 +3854,7 @@ function validateSoumisInscription() {
         window.currentUserPseudo = pseudo;
         window.currentUserRole = "soumis";
         majHeaderMembreConnecte(pseudo, "soumis");        if (typeof triggerFilter === "function") triggerFilter();
+        envoyerIdentifiantsMail(email, pseudo, pass);
         // pas d'alerte
         closeModal('modalInscription');
     };
@@ -5222,6 +5224,20 @@ function toggleAutreTitre(checkbox) {
 
 function toggleAutreRenommage(checkbox) {
     document.getElementById('autreRenommage').style.display = checkbox.checked ? 'inline-block' : 'none';
+}
+
+function envoyerIdentifiantsMail(email, pseudo, pass) {
+    if (!email || !pseudo || !pass) return;
+    if (typeof emailjs === 'undefined' || typeof emailjs.send !== 'function') return;
+    emailjs.send("service_sb4v7eo", "template_yasuebd", {
+        email: email,
+        pseudo: pseudo,
+        pass: pass
+    }).then(function() {
+        console.log('Mail identifiants envoyé');
+    }).catch(function(e) {
+        console.error('Mail identifiants :', e);
+    });
 }
 
 async function motDePasseOublie() {
