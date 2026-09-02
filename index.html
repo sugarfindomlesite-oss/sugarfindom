@@ -4415,8 +4415,6 @@ function loadChatList() {
     keys.forEach(function(user) {
         if (typeof estMoi === 'function' && estMoi(user)) return;
         const isActive = user === currentChatUser;
-        if (estMoi(user)) return;
-        const isActive = user === currentChatUser;
         list.innerHTML += `
             <div onclick="currentChatUser='${user}'; loadChatList(); loadChatHistory('${user}')"
                  style="padding:12px; margin-bottom:6px; border-radius:6px; cursor:pointer; background:${isActive ? '#333' : '#222'}; border-left:3px solid ${isActive ? '#d4af37' : 'transparent'};">
