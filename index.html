@@ -675,23 +675,11 @@ document.addEventListener("DOMContentLoaded", function() {
             document.getElementById('popup-game-container').style.display = 'flex';
         };
     }
-    // Restaurer la session si déjà connecté
+    // Restaurer la session seulement si le profil existe encore
     try {
         const session = JSON.parse(localStorage.getItem("sugar_active_session") || "{}");
         if (session && session.logged && session.pseudo) {
-            window.currentUserPseudo = session.pseudo;
-            window.currentUserRole = session.role || "hetero";
-            sessionSecoursDeconnectee = {
-                pseudo: session.pseudo,
-                role: session.role || "hetero",
-                logged: true
-            };
-            if (typeof majHeaderMembreConnecte === "function") {
-                majHeaderMembreConnecte(session.pseudo, session.role || "hetero");
-            }
-            if (typeof demarrerMessagesTempsReel === "function") {
-                demarrerMessagesTempsReel();
-            }
+            verifierCompteToujoursLa(session);
         }
     } catch (e) {}
     if (typeof remplirTaillePoids === 'function') remplirTaillePoids();
@@ -3115,6 +3103,39 @@ window.onload = function() {
 };
 
 // ===================== AJOUTS POUR FICHES DÉTAILLÉES =====================
+
+async function verifierCompteToujoursLa(session) {
+    const pseudo = (session && session.pseudo) ? String(session.pseudo).trim() : '';
+    if (!pseudo) {
+        if (typeof logoutSession === 'function') logoutSession();
+        return;
+    }
+    let ok = false;
+    try {
+        const { data, error } = await supabaseClient
+            .from('profiles')
+            .select('pseudo,role')
+            .ilike('pseudo', pseudo)
+            .limit(1);
+        if (!error && data && data[0]) ok = true;
+    } catch (e) {}
+    if (!ok) {
+        try { localStorage.removeItem('sugar_active_session'); } catch (e) {}
+        window.currentUserPseudo = '';
+        window.currentUserRole = '';
+        if (typeof logoutSession === 'function') logoutSession();
+        return;
+    }
+    window.currentUserPseudo = pseudo;
+    window.currentUserRole = session.role || 'hetero';
+    sessionSecoursDeconnectee = { pseudo: pseudo, role: session.role || 'hetero', logged: true };
+    if (typeof majHeaderMembreConnecte === 'function') {
+        majHeaderMembreConnecte(pseudo, session.role || 'hetero');
+    }
+    if (typeof demarrerMessagesTempsReel === 'function') {
+        demarrerMessagesTempsReel();
+    }
+}
 
 function getMonPseudo() {
     try {
