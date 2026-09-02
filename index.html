@@ -3972,7 +3972,7 @@ async function executerConnexion() {
 
     majHeaderMembreConnecte(vraiPseudo, role);    closeModal('modalAuth');
     closeModal('modalConnexion');
-    alert("✅ Connexion : " + vraiPseudo);
+    // pas d'alerte
     if (typeof triggerFilter === "function") triggerFilter();
 }
 
@@ -4037,7 +4037,7 @@ function logoutSession() {
     if (guestActions) guestActions.style.display = 'flex';
     if (loggedActions) loggedActions.style.display = 'none';
 
-    alert("Vous avez été déconnecté.");
+    // pas d'alerte
     triggerFilter(); 
 }
 
@@ -5141,7 +5141,7 @@ try {
     loadChatList();
     loadChatHistory(destinataire);
 
-    alert('✅ Contrat signé et envoyé dans la messagerie.');
+    // pas d'alerte
 }
 
 function voirContratMessage(index) {
