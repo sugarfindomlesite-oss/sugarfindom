@@ -3967,9 +3967,10 @@ async function executerConnexion() {
     sessionSecoursDeconnectee = { pseudo: vraiPseudo, role: role, logged: true };
     window.currentUserPseudo = vraiPseudo;
     window.currentUserRole = role;
+    conversations = {};
+    currentChatUser = null;
 
-    majHeaderMembreConnecte(vraiPseudo, role);
-    closeModal('modalAuth');
+    majHeaderMembreConnecte(vraiPseudo, role);    closeModal('modalAuth');
     closeModal('modalConnexion');
     alert("✅ Connexion : " + vraiPseudo);
     if (typeof triggerFilter === "function") triggerFilter();
